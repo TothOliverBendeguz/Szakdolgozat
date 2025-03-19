@@ -1,0 +1,88 @@
+<div class="graph-container">
+  <mat-card>
+    <mat-card-header>
+      <mat-card-title>Gráfos Nézet</mat-card-title>
+    </mat-card-header>
+
+    <mat-card-content>
+      <div class="controls-section">
+        <div class="filter-controls">
+          <mat-form-field>
+            <mat-label>Nézet típusa</mat-label>
+            <mat-select [(ngModel)]="viewType" (selectionChange)="onViewTypeChange()">
+              <mat-option value="all">Összes kapcsolat</mat-option>
+              <mat-option value="projects">Csak projektek</mat-option>
+              <mat-option value="project-tasks">Projekt és feladatai</mat-option>
+              <mat-option value="user">Felhasználó és kapcsolatai</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field *ngIf="viewType === 'project-tasks'">
+            <mat-label>Válassz projektet</mat-label>
+            <mat-select [(ngModel)]="selectedProjectId" (selectionChange)="onProjectSelect()">
+              <mat-option *ngFor="let project of projects" [value]="project.id">
+                {{project.name}}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field *ngIf="viewType === 'user'">
+            <mat-label>Válassz felhasználót</mat-label>
+            <mat-select [(ngModel)]="selectedUserId" (selectionChange)="onUserSelect()">
+              <mat-option *ngFor="let user of users" [value]="user.id">
+                {{user.userName}}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="zoom-controls">
+          <button mat-icon-button (click)="zoomIn()" matTooltip="Nagyítás">
+            <mat-icon>zoom_in</mat-icon>
+          </button>
+          <button mat-icon-button (click)="zoomOut()" matTooltip="Kicsinyítés">
+            <mat-icon>zoom_out</mat-icon>
+          </button>
+          <button mat-icon-button (click)="zoomToFit()" matTooltip="Illesztés">
+            <mat-icon>fit_screen</mat-icon>
+          </button>
+          <button mat-icon-button (click)="centerGraph()" matTooltip="Középre">
+            <mat-icon>center_focus_strong</mat-icon>
+          </button>
+          <button mat-icon-button (click)="resetGraph()" matTooltip="Alaphelyzet">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <div class="loading-container" *ngIf="loading">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Gráf adatok betöltése...</p>
+      </div>
+
+      <div class="network-container" #networkContainer [style.display]="loading ? 'none' : 'block'"></div>
+
+      <div class="legend">
+        <h3>Jelmagyarázat</h3>
+        <div class="legend-items">
+          <div class="legend-item">
+            <div class="legend-shape project-shape"></div>
+            <span>Projekt</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-shape task-shape"></div>
+            <span>Feladat</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-shape user-shape"></div>
+            <span>Felhasználó</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-shape deadline-shape"></div>
+            <span>Közeli határidő</span>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -30,6 +30,10 @@ import { NotificationDropdownComponent } from '../notifications/notification-dro
         <mat-icon>calendar_today</mat-icon>
         Calendar
       </button>
+      <button mat-button routerLink="/graph">
+        <mat-icon>share</mat-icon>
+        Graph View
+      </button>
       
       <!-- Értesítési komponens -->
       <app-notification-dropdown></app-notification-dropdown>

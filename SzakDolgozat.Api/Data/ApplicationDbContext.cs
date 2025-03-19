@@ -21,6 +21,12 @@ namespace SzakDolgozat.Api.Data
 
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<NotificationPreference> NotificationPreferences { get; set; }
+
+        public DbSet<ProjectTask> ProjectTasks { get; set; }
+        public DbSet<TaskAssignment> TaskAssignments { get; set; }
+
+        public DbSet<ProjectRelation> ProjectRelations { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -51,13 +57,27 @@ namespace SzakDolgozat.Api.Data
                 .HasForeignKey(n => n.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Értesítési beállítások entitás kapcsolat
             modelBuilder.Entity<NotificationPreference>()
                 .HasOne(np => np.User)
                 .WithMany()
                 .HasForeignKey(np => np.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // ProjectTask-TaskAssignment kapcsolat
+            modelBuilder.Entity<TaskAssignment>()
+                .HasKey(ta => new { ta.TaskId, ta.UserId });
+
+            modelBuilder.Entity<TaskAssignment>()
+                .HasOne(ta => ta.ProjectTask)
+                .WithMany(t => t.TaskAssignments)
+                .HasForeignKey(ta => ta.TaskId)
+                .OnDelete(DeleteBehavior.NoAction); // Megváltoztatjuk CASCADE helyett NoAction-re
+
+            modelBuilder.Entity<TaskAssignment>()
+                .HasOne(ta => ta.User)
+                .WithMany()
+                .HasForeignKey(ta => ta.UserId)
+                .OnDelete(DeleteBehavior.NoAction); // Megváltoztatjuk CASCADE helyett NoAction-r
 
             modelBuilder.Entity<Project>(entity =>
             {
@@ -74,7 +94,6 @@ namespace SzakDolgozat.Api.Data
                       .OnDelete(DeleteBehavior.NoAction);
             });
 
-            // IdentityRole adatok
             modelBuilder.Entity<IdentityRole>().HasData(
                 new IdentityRole
                 {
@@ -99,6 +118,18 @@ namespace SzakDolgozat.Api.Data
                 }
             );
 
+            modelBuilder.Entity<ProjectRelation>()
+                  .HasOne(pr => pr.SourceProject)
+                  .WithMany()
+                  .HasForeignKey(pr => pr.SourceProjectId)
+                  .OnDelete(DeleteBehavior.NoAction);
+
+            modelBuilder.Entity<ProjectRelation>()
+                .HasOne(pr => pr.TargetProject)
+                .WithMany()
+                .HasForeignKey(pr => pr.TargetProjectId)
+                .OnDelete(DeleteBehavior.NoAction);
+
             var adminId = "1a5ef115-89dc-483c-8539-f82f89250cc3";
             var adminUser = new User
             {
@@ -118,7 +149,6 @@ namespace SzakDolgozat.Api.Data
 
             modelBuilder.Entity<User>().HasData(adminUser);
 
-            // Admin role assignment
             modelBuilder.Entity<IdentityUserRole<string>>().HasData(
                 new IdentityUserRole<string>
                 {

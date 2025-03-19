@@ -26,6 +26,8 @@ export interface NotificationPreference {
   onlyActiveProjects: boolean;
   onlyAssignedProjects: boolean;
   alwaysNotifyOneDayBefore?: boolean
+  emailEnabled: boolean;
+  emailFrequencyInDays: number;
 }
 
 @Injectable({

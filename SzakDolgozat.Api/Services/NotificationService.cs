@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using SzakDolgozat.Api.Data;
 using SzakDolgozat.Api.Models;
+using SzakDolgozat.Api.Services.Email;
 
 namespace SzakDolgozat.Api.Services
 {
@@ -8,11 +9,16 @@ namespace SzakDolgozat.Api.Services
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<NotificationService> _logger;
+        private readonly IEmailService _emailService;
 
-        public NotificationService(ApplicationDbContext context, ILogger<NotificationService> logger)
+        public NotificationService(
+            ApplicationDbContext context,
+            ILogger<NotificationService> logger,
+            IEmailService emailService)
         {
             _context = context;
             _logger = logger;
+            _emailService = emailService;
         }
 
 
@@ -84,12 +90,17 @@ namespace SzakDolgozat.Api.Services
             {
                 var preferences = await _context.NotificationPreferences
                     .Where(p => p.Enabled)
+                    .Include(p => p.User)
                     .ToListAsync();
 
                 var allProjects = await _context.Projects
                     .Include(p => p.ProjectUsers)
                     .ThenInclude(pu => pu.User)
                     .ToListAsync();
+
+                var today = DateTime.UtcNow.Date;
+                var emailsSent = 0;
+                var notificationsCreated = 0;
 
                 foreach (var preference in preferences)
                 {
@@ -107,8 +118,6 @@ namespace SzakDolgozat.Api.Services
                                    p.ProjectUsers.Any(pu => pu.UserId == preference.UserId))
                             .ToList();
                     }
-
-                    var today = DateTime.UtcNow.Date;
 
                     foreach (var project in userProjects)
                     {
@@ -136,7 +145,14 @@ namespace SzakDolgozat.Api.Services
                                 };
 
                                 _context.Notifications.Add(notification);
+                                notificationsCreated++;
                                 _logger.LogInformation($"1 napos értesítés létrehozva: {notification.Message} felhasználónak: {preference.UserId}");
+
+                                if (preference.EmailEnabled)
+                                {
+                                    await _emailService.SendProjectDeadlineEmailAsync(preference.User, project, 1);
+                                    emailsSent++;
+                                }
                             }
                         }
 
@@ -179,13 +195,58 @@ namespace SzakDolgozat.Api.Services
                                 };
 
                                 _context.Notifications.Add(notification);
+                                notificationsCreated++;
                                 _logger.LogInformation($"Határidő értesítés létrehozva: {notification.Message} felhasználónak: {preference.UserId}");
+
+                                if (preference.EmailEnabled)
+                                {
+                                    bool shouldSendEmail = true;
+
+                                    if (preference.EmailFrequencyInDays > preference.FrequencyInDays)
+                                    {
+                                        var lastEmailDate = await _context.Notifications
+                                            .Where(n => n.UserId == preference.UserId &&
+                                                   n.ProjectId == project.Id &&
+                                                   n.Type == "email-sent")
+                                            .OrderByDescending(n => n.CreatedAt)
+                                            .Select(n => n.CreatedAt.Date)
+                                            .FirstOrDefaultAsync();
+
+                                        if (lastEmailDate != default)
+                                        {
+                                            var daysSinceLastEmail = (today - lastEmailDate).TotalDays;
+                                            shouldSendEmail = daysSinceLastEmail >= preference.EmailFrequencyInDays;
+                                        }
+                                    }
+
+                                    if (shouldSendEmail)
+                                    {
+                                        await _emailService.SendProjectDeadlineEmailAsync(
+                                            preference.User,
+                                            project,
+                                            (int)daysUntilDeadline);
+
+                                        _context.Notifications.Add(new Notification
+                                        {
+                                            UserId = preference.UserId,
+                                            ProjectId = project.Id,
+                                            Title = "Email értesítés elküldve",
+                                            Message = $"Email értesítés a {project.Name} projektről",
+                                            Type = "email-sent",
+                                            CreatedAt = DateTime.UtcNow,
+                                            IsRead = true 
+                                        });
+
+                                        emailsSent++;
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
                 await _context.SaveChangesAsync();
+                _logger.LogInformation($"Értesítés generálás befejezve. {notificationsCreated} értesítés létrehozva és {emailsSent} email elküldve.");
             }
             catch (Exception ex)
             {
@@ -227,7 +288,6 @@ namespace SzakDolgozat.Api.Services
 
             if (existingPreference == null)
             {
-                // A User objektumot nem akarjuk elmenteni
                 preference.User = null;
                 _context.NotificationPreferences.Add(preference);
             }
@@ -238,8 +298,7 @@ namespace SzakDolgozat.Api.Services
                 existingPreference.FrequencyInDays = preference.FrequencyInDays;
                 existingPreference.OnlyActiveProjects = preference.OnlyActiveProjects;
                 existingPreference.OnlyAssignedProjects = preference.OnlyAssignedProjects;
-                // Ha később hozzáadjuk az AlwaysNotifyOneDayBefore mezőt:
-                // existingPreference.AlwaysNotifyOneDayBefore = preference.AlwaysNotifyOneDayBefore;
+
 
                 _context.NotificationPreferences.Update(existingPreference);
             }

@@ -6,17 +6,16 @@ namespace SzakDolgozat.Api.BackgroundServices
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<NotificationBackgroundService> _logger;
-        private readonly TimeSpan _period = TimeSpan.FromHours(24); // Alapértelmezetten 24 óránként fut
+        private readonly TimeSpan _period = TimeSpan.FromHours(24); 
 
         public NotificationBackgroundService(IServiceScopeFactory scopeFactory, ILogger<NotificationBackgroundService> logger)
         {
             _scopeFactory = scopeFactory;
             _logger = logger;
 
-            // Fejlesztési módban gyakrabban fusson
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
             {
-                _period = TimeSpan.FromMinutes(1); // 1 perc
+                _period = TimeSpan.FromHours(12); 
             }
         }
 

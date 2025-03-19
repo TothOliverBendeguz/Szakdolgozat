@@ -10,6 +10,7 @@ using SzakDolgozat.Api.Services;
 using SzakDolgozat.Api.BackgroundServices;
 using SzakDolgozat.Api.Services;
 using SzakDolgozat.Api.BackgroundServices;
+using SzakDolgozat.Api.Services.Email;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -92,6 +93,10 @@ else
 {
     builder.Services.AddHostedService<NotificationBackgroundService>();
 }
+
+builder.Services.Configure<EmailSettings>(
+builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
 

@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using SzakDolgozat.Api.Data;
 using SzakDolgozat.Api.Models;
 using SzakDolgozat.Api.Services;
+using SzakDolgozat.Api.Services.Email;
 
 namespace SzakDolgozat.Api.Controllers
 {
@@ -13,14 +16,21 @@ namespace SzakDolgozat.Api.Controllers
     {
         private readonly NotificationService _notificationService;
         private readonly ILogger<NotificationController> _logger;
+        private readonly ApplicationDbContext _context; 
+        private readonly IEmailService _emailService; 
 
-        public NotificationController(
-            NotificationService notificationService,
-            ILogger<NotificationController> logger)
-        {
-            _notificationService = notificationService;
-            _logger = logger;
-        }
+    public NotificationController(
+        NotificationService notificationService,
+        ILogger<NotificationController> logger,
+        ApplicationDbContext context, 
+        IEmailService emailService) 
+    {
+        _notificationService = notificationService;
+        _logger = logger;
+        _context = context;
+        _emailService = emailService;
+    }
+    
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Notification>>> GetNotifications([FromQuery] bool unreadOnly = false, [FromQuery] int limit = 0)
@@ -206,7 +216,7 @@ namespace SzakDolgozat.Api.Controllers
             }
         }
 
-        [HttpPost("generate-test")]
+    /*    [HttpPost("generate-test")]
         public async Task<IActionResult> GenerateTestNotifications()
         {
             try
@@ -218,6 +228,80 @@ namespace SzakDolgozat.Api.Controllers
             {
                 _logger.LogError(ex, "Error generating test notifications");
                 return StatusCode(500, new { message = "Internal server error" });
+            }
+        }
+
+        */
+
+
+        [HttpGet("generate-test-public")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GenerateTestPublic()
+        {
+            try
+            {
+                await _notificationService.GenerateDeadlineNotificationsAsync();
+                return Ok(new { message = "Test notifications generated" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error generating test notifications");
+                return StatusCode(500, new { message = "Error generating test notifications: " + ex.Message });
+            }
+        }
+
+
+
+
+
+        //email teszt2
+        [HttpGet("test-email-public")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestEmailPublic()
+        {
+            try
+            {
+                string yourEmail = "tesztemail123@gmail.hu";
+
+                var result = await _emailService.SendEmailAsync(
+                    yourEmail,
+                    "Teszt email a SzakDolgozat alkalmazásból",
+                    @"<html>
+            <head>
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background-color: #3f51b5; color: white; padding: 10px 20px; }
+                    .content { padding: 20px; background-color: #f8f9fa; }
+                    .footer { text-align: center; margin-top: 20px; font-size: 12px; color: #666; }
+                </style>
+            </head>
+            <body>
+                <div class='container'>
+                    <div class='header'>
+                        <h2>Teszt Email</h2>
+                    </div>
+                    <div class='content'>
+                        <h3>Kedves Felhasználó!</h3>
+                        <p>Ez egy teszt email a SzakDolgozat email értesítő rendszeréből.</p>
+                        <p>Ha ezt az emailt megkaptad, az értesítési rendszer megfelelően működik.</p>
+                    </div>
+                    <div class='footer'>
+                        <p>Ez egy automatikus értesítés a SzakDolgozat projektmenedzsment rendszertől.</p>
+                    </div>
+                </div>
+            </body>
+            </html>");
+
+                if (result)
+                    return Ok(new { success = true, message = "Email sikeresen elküldve a következő címre: " + yourEmail });
+                else
+                    return StatusCode(500, new { success = false, message = "Hiba történt az email küldés során. Ellenőrizd a szerver naplóit!" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in test email public");
+                return StatusCode(500, new { success = false, message = "Error: " + ex.Message });
             }
         }
     }

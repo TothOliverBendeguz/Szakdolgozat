@@ -18,6 +18,8 @@ import { Project, ProjectUser } from '../../services/project.service';
 import { ProjectReport, ProjectReportService } from '../../services/project-report.service';
 import { ProjectDocument, ProjectDocumentService } from '../../services/project-document.service';
 import { AuthService } from '../../auth.service';
+import { TaskListComponent } from '../../tasks/task-list.component';
+import { ProjectRelationsComponent } from '../project-relations/project-relations.component';
 
 @Component({
   selector: 'app-project-details-dialog',
@@ -36,7 +38,10 @@ import { AuthService } from '../../auth.service';
     MatSelectModule,
     MatExpansionModule,
     MatListModule,
-    MatTooltipModule
+    MatTooltipModule,
+    TaskListComponent,
+    ProjectRelationsComponent
+
   ],
   template: `
    <div class="dialog-container">
@@ -177,6 +182,7 @@ import { AuthService } from '../../auth.service';
            </div>
          </div>
 
+
 <div class="documentation-section">
   <h3>Project Documentation</h3>
   <div class="upload-section" *ngIf="canEdit">
@@ -197,6 +203,12 @@ import { AuthService } from '../../auth.service';
       Upload Documentation
     </button>
   </div>
+
+  <div class="tasks-section">
+  <h3>Projekt feladatok</h3>
+  <app-task-list [projectId]="data.id"></app-task-list>
+</div>
+
 
   <mat-expansion-panel class="documents-panel">
     <mat-expansion-panel-header>
@@ -246,6 +258,12 @@ import { AuthService } from '../../auth.service';
        <button mat-button color="warn" (click)="close()">Close</button>
      </mat-dialog-actions>
    </div>
+
+
+<div class="project-relations-section">
+  <h3>Projekt kapcsolatok</h3>
+  <app-project-relations [projectId]="data.id"></app-project-relations>
+</div>
  `,
   styles: [`
    .dialog-container {
@@ -395,6 +413,11 @@ mat-list-item {
   display: flex;
   gap: 8px;
 }
+.tasks-section {
+  margin-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  padding-top: 20px;
+}
 
 
  `]
@@ -425,7 +448,6 @@ export class ProjectDetailsDialogComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    // Dátum és idő inicializálása
     this.initializeDateTimeFields();
 
     this.loadReports();
@@ -435,22 +457,18 @@ export class ProjectDetailsDialogComponent implements OnInit {
     }
   }
 
-  // Új metódus a dátum-idő mezők inicializálására
   initializeDateTimeFields() {
     console.log('Initializing date-time fields with data:', this.data);
 
     if (this.data.startDate) {
-      // Biztosítjuk, hogy Date objektumunk van
       const startDateTime = new Date(this.data.startDate);
 
-      // Csak dátum rész kinyerése (létrehozunk egy új Date objektumot az óra:perc nélkül)
       this.startDate = new Date(
         startDateTime.getFullYear(),
         startDateTime.getMonth(),
         startDateTime.getDate()
       );
 
-      // Óra:perc kinyerése formázva
       this.startTime = this.formatTimeFromDate(startDateTime);
 
       console.log('Extracted startDate:', this.startDate);
@@ -458,17 +476,14 @@ export class ProjectDetailsDialogComponent implements OnInit {
     }
 
     if (this.data.plannedEndDate) {
-      // Biztosítjuk, hogy Date objektumunk van
       const endDateTime = new Date(this.data.plannedEndDate);
 
-      // Csak dátum rész kinyerése (létrehozunk egy új Date objektumot az óra:perc nélkül)
       this.endDate = new Date(
         endDateTime.getFullYear(),
         endDateTime.getMonth(),
         endDateTime.getDate()
       );
 
-      // Óra:perc kinyerése formázva
       this.endTime = this.formatTimeFromDate(endDateTime);
 
       console.log('Extracted endDate:', this.endDate);
@@ -476,19 +491,15 @@ export class ProjectDetailsDialogComponent implements OnInit {
     }
   }
 
-  // Segédfüggvény az idő formázásához
   formatTimeFromDate(date: Date): string {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   }
 
-  // Új metódus az időzóna korrekciókhoz
   fixTimeZoneIssues() {
     if (this.data.startDate) {
-      // Ellenőrizzük, hogy string vagy Date objektum-e
       if (typeof this.data.startDate === 'string') {
         this.data.startDate = new Date(this.data.startDate);
       }
-      // Korrigáljuk az időzóna eltérést ha szükséges
       const currentOffset = this.data.startDate.getTimezoneOffset();
       if (currentOffset !== 0) {
         console.log('Korrigálás startDate időzóna eltérés:', currentOffset);
@@ -498,11 +509,9 @@ export class ProjectDetailsDialogComponent implements OnInit {
     }
 
     if (this.data.plannedEndDate) {
-      // Ellenőrizzük, hogy string vagy Date objektum-e
       if (typeof this.data.plannedEndDate === 'string') {
         this.data.plannedEndDate = new Date(this.data.plannedEndDate);
       }
-      // Korrigáljuk az időzóna eltérést ha szükséges
       const currentOffset = this.data.plannedEndDate.getTimezoneOffset();
       if (currentOffset !== 0) {
         console.log('Korrigálás plannedEndDate időzóna eltérés:', currentOffset);
@@ -525,7 +534,6 @@ export class ProjectDetailsDialogComponent implements OnInit {
         startDateTime.getMonth(),
         startDateTime.getDate()
       );
-      // Időpont kinyerése formázva
       this.startTime = `${startDateTime.getHours().toString().padStart(2, '0')}:${startDateTime.getMinutes().toString().padStart(2, '0')}`;
       console.log('Extracted start time:', this.startTime);
     }
@@ -537,7 +545,6 @@ export class ProjectDetailsDialogComponent implements OnInit {
         endDateTime.getMonth(),
         endDateTime.getDate()
       );
-      // Időpont kinyerése formázva
       this.endTime = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`;
       console.log('Extracted end time:', this.endTime);
     }
@@ -674,7 +681,6 @@ export class ProjectDetailsDialogComponent implements OnInit {
       console.log('End Date:', this.endDate);
       console.log('End Time:', this.endTime);
 
-      // Egyszerű, robusztus dátum+idő kombináció
       const combinedStartDateTime = this.createExactDateTime(this.startDate, this.startTime);
       const combinedEndDateTime = this.createExactDateTime(this.endDate, this.endTime);
 
@@ -693,17 +699,13 @@ export class ProjectDetailsDialogComponent implements OnInit {
     }
   }
 
-  // Új metódus a pontos dátum+idő létrehozásához
   createExactDateTime(date: Date, timeString: string): Date {
-    // Feldolgozzuk a dátum és idő komponenseket
     const year = date.getFullYear();
     const month = date.getMonth();
     const day = date.getDate();
 
-    // Feldolgozzuk az idő komponenseket
     const [hours, minutes] = timeString.split(':').map(Number);
 
-    // Létrehozunk egy új dátumot a pontos időponttal
     const result = new Date(year, month, day, hours, minutes, 0, 0);
 
     console.log(`Created exact datetime: ${result.toLocaleString()} from ${date.toDateString()} and ${timeString}`);

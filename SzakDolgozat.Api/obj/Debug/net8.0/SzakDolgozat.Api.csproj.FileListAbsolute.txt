@@ -302,3 +302,6 @@ C:\Users\tothb\Source\Repos\Szakdolgozat\SzakDolgozat.Api\obj\Debug\net8.0\refin
 C:\Users\tothb\Source\Repos\Szakdolgozat\SzakDolgozat.Api\obj\Debug\net8.0\SzakDolgozat.Api.pdb
 C:\Users\tothb\Source\Repos\Szakdolgozat\SzakDolgozat.Api\obj\Debug\net8.0\SzakDolgozat.Api.genruntimeconfig.cache
 C:\Users\tothb\Source\Repos\Szakdolgozat\SzakDolgozat.Api\obj\Debug\net8.0\ref\SzakDolgozat.Api.dll
+C:\Users\tothb\Source\Repos\Szakdolgozat\SzakDolgozat.Api\bin\Debug\net8.0\Newtonsoft.Json.dll
+C:\Users\tothb\Source\Repos\Szakdolgozat\SzakDolgozat.Api\bin\Debug\net8.0\SendGrid.dll
+C:\Users\tothb\Source\Repos\Szakdolgozat\SzakDolgozat.Api\bin\Debug\net8.0\StarkbankEcdsa.dll

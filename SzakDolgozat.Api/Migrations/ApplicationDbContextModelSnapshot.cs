@@ -52,21 +52,21 @@ namespace SzakDolgozat.Api.Migrations
                         new
                         {
                             Id = "8450e6c0-e5a6-41b2-8957-978998ebdaeb",
-                            ConcurrencyStamp = "157a4fb3-38b1-4632-bde4-c56dd2312835",
+                            ConcurrencyStamp = "18046a45-c763-4240-a9a6-bd20c4992708",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
                             Id = "ca1b544d-b871-4344-a8bd-d73d30a36307",
-                            ConcurrencyStamp = "414fa3b0-5995-46f1-899a-7638ee4121f3",
+                            ConcurrencyStamp = "6465ea2a-5ed9-4d14-a5c0-8b6bc9bb64c7",
                             Name = "Developer",
                             NormalizedName = "DEVELOPER"
                         },
                         new
                         {
                             Id = "0713ae1b-c1c4-45f5-b4f0-cbd98977ee9a",
-                            ConcurrencyStamp = "8c010c1d-a274-4039-851b-699641b773e3",
+                            ConcurrencyStamp = "8fadf074-f935-4613-a978-57baffc02b98",
                             Name = "Reader",
                             NormalizedName = "READER"
                         });
@@ -244,6 +244,12 @@ namespace SzakDolgozat.Api.Migrations
                     b.Property<int>("DaysBeforeDeadline")
                         .HasColumnType("int");
 
+                    b.Property<bool>("EmailEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("EmailFrequencyInDays")
+                        .HasColumnType("int");
+
                     b.Property<bool>("Enabled")
                         .HasColumnType("bit");
 
@@ -359,6 +365,37 @@ namespace SzakDolgozat.Api.Migrations
                     b.ToTable("ProjectDocuments");
                 });
 
+            modelBuilder.Entity("SzakDolgozat.Api.Models.ProjectRelation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RelationType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("SourceProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TargetProjectId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceProjectId");
+
+                    b.HasIndex("TargetProjectId");
+
+                    b.ToTable("ProjectRelations");
+                });
+
             modelBuilder.Entity("SzakDolgozat.Api.Models.ProjectReport", b =>
                 {
                     b.Property<int>("Id")
@@ -398,6 +435,61 @@ namespace SzakDolgozat.Api.Migrations
                     b.ToTable("ProjectReports");
                 });
 
+            modelBuilder.Entity("SzakDolgozat.Api.Models.ProjectTask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedById")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("ProjectId");
+
+                    b.ToTable("ProjectTasks");
+                });
+
             modelBuilder.Entity("SzakDolgozat.Api.Models.ProjectUser", b =>
                 {
                     b.Property<int>("ProjectId")
@@ -413,6 +505,31 @@ namespace SzakDolgozat.Api.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("ProjectUsers");
+                });
+
+            modelBuilder.Entity("SzakDolgozat.Api.Models.TaskAssignment", b =>
+                {
+                    b.Property<int>("TaskId")
+                        .HasColumnType("int")
+                        .HasColumnOrder(0);
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnOrder(1);
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("TaskId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TaskAssignments");
                 });
 
             modelBuilder.Entity("SzakDolgozat.Api.Models.User", b =>
@@ -495,16 +612,16 @@ namespace SzakDolgozat.Api.Migrations
                         {
                             Id = "1a5ef115-89dc-483c-8539-f82f89250cc3",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "cf22c3ee-f002-41d5-bf87-bc271c5386c4",
+                            ConcurrencyStamp = "012412af-f126-4f9a-872b-fbb9e23ab317",
                             Email = "admin@admin.com",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@ADMIN.COM",
                             NormalizedUserName = "ADMIN@ADMIN.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEBnSrmUg5Y5vCgjVCBeNcYTexLvkcJ0qUepS3vgCh1UPg5855Dsl1FHjJV5ntkkpfA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEMI/Mkp1zXdMK8U9cz1wDD/5XWzVC+tz/3m/2ik7CipkBWrPPOdpCxNkkVpGOSIeUA==",
                             PhoneNumberConfirmed = false,
                             Role = 1,
-                            SecurityStamp = "cba457ce-b998-43de-bf5c-61a96fe7264c",
+                            SecurityStamp = "4c35a953-5ff2-4986-b834-f165e2cf5b6a",
                             TwoFactorEnabled = false,
                             UserName = "admin@admin.com"
                         });
@@ -623,11 +740,49 @@ namespace SzakDolgozat.Api.Migrations
                     b.Navigation("Project");
                 });
 
+            modelBuilder.Entity("SzakDolgozat.Api.Models.ProjectRelation", b =>
+                {
+                    b.HasOne("SzakDolgozat.Api.Models.Project", "SourceProject")
+                        .WithMany()
+                        .HasForeignKey("SourceProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("SzakDolgozat.Api.Models.Project", "TargetProject")
+                        .WithMany()
+                        .HasForeignKey("TargetProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("SourceProject");
+
+                    b.Navigation("TargetProject");
+                });
+
             modelBuilder.Entity("SzakDolgozat.Api.Models.ProjectReport", b =>
                 {
                     b.HasOne("SzakDolgozat.Api.Models.User", "CreatedBy")
                         .WithMany()
                         .HasForeignKey("CreatedById");
+
+                    b.HasOne("SzakDolgozat.Api.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("SzakDolgozat.Api.Models.ProjectTask", b =>
+                {
+                    b.HasOne("SzakDolgozat.Api.Models.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("SzakDolgozat.Api.Models.Project", "Project")
                         .WithMany()
@@ -659,9 +814,33 @@ namespace SzakDolgozat.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("SzakDolgozat.Api.Models.TaskAssignment", b =>
+                {
+                    b.HasOne("SzakDolgozat.Api.Models.ProjectTask", "ProjectTask")
+                        .WithMany("TaskAssignments")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("SzakDolgozat.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("ProjectTask");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("SzakDolgozat.Api.Models.Project", b =>
                 {
                     b.Navigation("ProjectUsers");
+                });
+
+            modelBuilder.Entity("SzakDolgozat.Api.Models.ProjectTask", b =>
+                {
+                    b.Navigation("TaskAssignments");
                 });
 
             modelBuilder.Entity("SzakDolgozat.Api.Models.User", b =>

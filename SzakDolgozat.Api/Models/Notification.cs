@@ -32,6 +32,10 @@ namespace SzakDolgozat.Api.Models
         [Required]
         public bool AlwaysNotifyOneDayBefore { get; set; } = true;
 
+        public bool EmailEnabled { get; set; } = true;
+
+        public int EmailFrequencyInDays { get; set; } = 7;
+
         [ForeignKey("UserId")]
         public User? User { get; set; }  
     }

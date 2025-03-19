@@ -13,6 +13,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { NotificationService, NotificationPreference } from '../../services/notification.service';
 
 @Component({
@@ -32,7 +33,8 @@ import { NotificationService, NotificationPreference } from '../../services/noti
     MatCheckboxModule,
     MatSnackBarModule,
     MatTooltipModule,
-    MatButtonToggleModule
+    MatButtonToggleModule,
+    MatExpansionModule
   ],
   template: `
     <div class="notification-settings">
@@ -95,6 +97,34 @@ import { NotificationService, NotificationPreference } from '../../services/noti
               </div>
             </div>
           </div>
+
+          <!-- Email értesítési beállítások -->
+          <mat-expansion-panel class="mt-3">
+            <mat-expansion-panel-header>
+              <mat-panel-title>
+                Email értesítések
+              </mat-panel-title>
+              <mat-panel-description>
+                Email értesítések beállításai
+              </mat-panel-description>
+            </mat-expansion-panel-header>
+
+            <div class="email-settings">
+              <mat-slide-toggle [(ngModel)]="preferences.emailEnabled" class="mb-3">
+                Email értesítések engedélyezése
+              </mat-slide-toggle>
+
+              <div *ngIf="preferences.emailEnabled">
+                <p class="hint-text">Az email értesítések az alkalmazáson belüli értesítésekkel együtt működnek, 
+                  de beállíthatod, hogy ritkábban kapj email értesítéseket.</p>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Email értesítések gyakorisága (naponta)</mat-label>
+                  <input matInput type="number" [(ngModel)]="preferences.emailFrequencyInDays" min="1" max="30">
+                  <mat-hint>Állítsd magasabbra, mint az általános értesítési gyakoriság, ha ritkábban szeretnél emaileket kapni</mat-hint>
+                </mat-form-field>
+              </div>
+            </div>
+          </mat-expansion-panel>
         </div>
       </div>
       
@@ -103,75 +133,25 @@ import { NotificationService, NotificationPreference } from '../../services/noti
         <button mat-raised-button color="primary" (click)="saveSettings()">
           Beállítások mentése
         </button>
+        <button mat-button (click)="resetSettings()">
+          Visszaállítás
+        </button>
       </div>
     </div>
   `,
-  styles: [`
-    .notification-settings {
-      margin-top: 20px;
+  styles: [
+    // ...meglevő stílusok...
+    `
+    .full-width {
+      width: 100%;
     }
-
-    .settings-section {
-      margin: 20px 0;
-    }
-
-    .settings-section.disabled {
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    .hint-text {
-      color: rgba(0, 0, 0, 0.6);
-      font-size: 14px;
-      margin: 8px 0;
-    }
-
-    .mt-2 {
-      margin-top: 8px;
-    }
-
-    .mt-3 {
-      margin-top: 16px;
-    }
-
-    .mt-4 {
-      margin-top: 24px;
-    }
-
-    .mb-3 {
-      margin-bottom: 16px;
-    }
-
-    .row {
+    .email-settings {
       display: flex;
-      flex-wrap: wrap;
-      margin-right: -15px;
-      margin-left: -15px;
-    }
-
-    .col-md-6 {
-      flex: 0 0 50%;
-      max-width: 50%;
-      padding-right: 15px;
-      padding-left: 15px;
-    }
-
-    .preset-description {
-      background-color: #f5f5f5;
-      padding: 10px;
-      border-radius: 4px;
-    }
-
-    .actions {
-      margin-top: 24px;
-      display: flex;
+      flex-direction: column;
       gap: 16px;
     }
-
-    mat-divider {
-      margin: 20px 0;
-    }
-  `]
+    `
+  ]
 })
 export class NotificationSettingsComponent implements OnInit {
   preferences: NotificationPreference = {
@@ -181,7 +161,10 @@ export class NotificationSettingsComponent implements OnInit {
     daysBeforeDeadline: 30,
     frequencyInDays: 7,
     onlyActiveProjects: true,
-    onlyAssignedProjects: false
+    onlyAssignedProjects: false,
+    // Új email mezők
+    emailEnabled: true,
+    emailFrequencyInDays: 7
   };
 
   alwaysNotifyOneDayBefore: boolean = true;
@@ -211,6 +194,7 @@ export class NotificationSettingsComponent implements OnInit {
       next: (preferences) => {
         this.preferences = preferences;
         this.originalPreferences = { ...preferences };
+        this.alwaysNotifyOneDayBefore = preferences.alwaysNotifyOneDayBefore || false;
         this.determineCurrentPreset();
         this.loading = false;
       },
@@ -249,7 +233,6 @@ export class NotificationSettingsComponent implements OnInit {
   saveSettings(): void {
     this.loading = true;
 
-    
     if (this.preferences.daysBeforeDeadline <= 0) {
       this.snackBar.open('Az értesítési időszaknak legalább 1 napnak kell lennie', 'OK', { duration: 3000 });
       this.loading = false;
@@ -257,6 +240,11 @@ export class NotificationSettingsComponent implements OnInit {
     }
     if (this.preferences.frequencyInDays <= 0) {
       this.snackBar.open('Az értesítési gyakoriságnak legalább 1 napnak kell lennie', 'OK', { duration: 3000 });
+      this.loading = false;
+      return;
+    }
+    if (this.preferences.emailFrequencyInDays <= 0) {
+      this.snackBar.open('Az email értesítési gyakoriságnak legalább 1 napnak kell lennie', 'OK', { duration: 3000 });
       this.loading = false;
       return;
     }
@@ -285,12 +273,14 @@ export class NotificationSettingsComponent implements OnInit {
   resetSettings(): void {
     if (this.originalPreferences) {
       this.preferences = { ...this.originalPreferences };
+      this.alwaysNotifyOneDayBefore = this.originalPreferences.alwaysNotifyOneDayBefore || false;
       this.determineCurrentPreset();
     }
   }
 
   isFormValid(): boolean {
     return this.preferences.daysBeforeDeadline > 0 &&
-      this.preferences.frequencyInDays > 0;
+      this.preferences.frequencyInDays > 0 &&
+      this.preferences.emailFrequencyInDays > 0;
   }
 }
