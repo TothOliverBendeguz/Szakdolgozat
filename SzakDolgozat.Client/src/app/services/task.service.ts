@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { User } from './user.service';
-
 export interface TaskAssignment {
   userId: string;
   role: string;
@@ -69,7 +69,18 @@ export class TaskService {
     return this.http.put(`${this.apiUrl}/${id}`, task);
   }
 
+  getDeletedProjectTasks(projectId: number): Observable<Task[]> {
+    return this.http.get<Task[]>(`${this.apiUrl}/project/${projectId}/deleted`).pipe(
+      catchError(error => {
+        console.error('Error fetching deleted tasks:', error);
+        return [];
+      })
+    );
+  }
+
+
   deleteTask(id: number): Observable<any> {
     return this.http.delete(`${this.apiUrl}/${id}`);
   }
 }
+

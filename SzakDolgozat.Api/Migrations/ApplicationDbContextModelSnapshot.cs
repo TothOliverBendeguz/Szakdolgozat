@@ -52,21 +52,21 @@ namespace SzakDolgozat.Api.Migrations
                         new
                         {
                             Id = "8450e6c0-e5a6-41b2-8957-978998ebdaeb",
-                            ConcurrencyStamp = "18046a45-c763-4240-a9a6-bd20c4992708",
+                            ConcurrencyStamp = "433588f7-c082-42f6-98f9-67041f0b5a85",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         },
                         new
                         {
                             Id = "ca1b544d-b871-4344-a8bd-d73d30a36307",
-                            ConcurrencyStamp = "6465ea2a-5ed9-4d14-a5c0-8b6bc9bb64c7",
+                            ConcurrencyStamp = "61e1985d-324d-4c60-83ed-2baa85a6bb56",
                             Name = "Developer",
                             NormalizedName = "DEVELOPER"
                         },
                         new
                         {
                             Id = "0713ae1b-c1c4-45f5-b4f0-cbd98977ee9a",
-                            ConcurrencyStamp = "8fadf074-f935-4613-a978-57baffc02b98",
+                            ConcurrencyStamp = "0f721cbe-eea9-462f-aa79-74973fcdd108",
                             Name = "Reader",
                             NormalizedName = "READER"
                         });
@@ -284,11 +284,17 @@ namespace SzakDolgozat.Api.Migrations
                     b.Property<string>("CreatedById")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<string>("Name")
@@ -453,12 +459,18 @@ namespace SzakDolgozat.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("DueDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Priority")
                         .IsRequired()
@@ -478,8 +490,8 @@ namespace SzakDolgozat.Api.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
 
@@ -612,19 +624,109 @@ namespace SzakDolgozat.Api.Migrations
                         {
                             Id = "1a5ef115-89dc-483c-8539-f82f89250cc3",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "012412af-f126-4f9a-872b-fbb9e23ab317",
+                            ConcurrencyStamp = "7cb87182-52a7-4014-a69f-984f31aac862",
                             Email = "admin@admin.com",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@ADMIN.COM",
                             NormalizedUserName = "ADMIN@ADMIN.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEMI/Mkp1zXdMK8U9cz1wDD/5XWzVC+tz/3m/2ik7CipkBWrPPOdpCxNkkVpGOSIeUA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAENdHI9zrDHawPggBzuNnyGowxP6pn+Qt3Jlfpg9Kv61Shzbsb6Sa5Aaf+zS8YiLg4A==",
                             PhoneNumberConfirmed = false,
                             Role = 1,
-                            SecurityStamp = "4c35a953-5ff2-4986-b834-f165e2cf5b6a",
+                            SecurityStamp = "2703a038-6959-444f-8084-7cc27b0670dc",
                             TwoFactorEnabled = false,
                             UserName = "admin@admin.com"
                         });
+                });
+
+            modelBuilder.Entity("SzakDolgozat.Api.Models.UserActivityLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsProjectDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsTaskDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ProjectId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ProjectName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("TaskId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TaskName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserActivityLogs");
+                });
+
+            modelBuilder.Entity("SzakDolgozat.Api.Models.UserSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("DefaultGraphView")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("DefaultProjectView")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UiTheme")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserSettings");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -829,6 +931,40 @@ namespace SzakDolgozat.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("ProjectTask");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SzakDolgozat.Api.Models.UserActivityLog", b =>
+                {
+                    b.HasOne("SzakDolgozat.Api.Models.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId");
+
+                    b.HasOne("SzakDolgozat.Api.Models.ProjectTask", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId");
+
+                    b.HasOne("SzakDolgozat.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+
+                    b.Navigation("Task");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("SzakDolgozat.Api.Models.UserSettings", b =>
+                {
+                    b.HasOne("SzakDolgozat.Api.Models.User", "User")
+                        .WithOne()
+                        .HasForeignKey("SzakDolgozat.Api.Models.UserSettings", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

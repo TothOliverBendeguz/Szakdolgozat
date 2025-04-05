@@ -1,25 +1,253 @@
-@import '@angular/material/prebuilt-themes/indigo-pink.css';
-//@import '@fullcalendar/common/main.css';
-//@import '@fullcalendar/daygrid/main.css';
+/* You can add global styles to this file, and also import other style files */
 
+// Alap stílusok
 html, body {
   height: 100%;
+}
+
+body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
-.content-container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: 0 auto;
+// Közös stílusok mindkét témához
+.material-icons {
+  font-family: 'Material Icons';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  display: inline-block;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+  vertical-align: middle;
 }
 
-mat-card {
-  margin: 16px 0;
+// Átmenetek a témaváltáshoz
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+.mat-mdc-card,
+.mat-mdc-table,
+.mat-toolbar,
+.mat-expansion-panel,
+.network-container,
+.legend {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+.mat-mdc-form-field,
+.mat-mdc-select-value,
+.mat-mdc-select-arrow,
+.mat-label,
+.mat-mdc-input-element,
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-icon-button,
+.mat-expansion-panel-header-title,
+.mat-expansion-panel-header-description,
+.mat-icon {
+  transition: color 0.3s ease;
+}
+
+// Sötét téma stílusok - Ezeket a dark-theme.scss fájlból másoltam ide
+// Alap színek sötét témában
+$dark-primary-bg: #1e1e1e;
+$dark-secondary-bg: #2d2d2d;
+$dark-card-bg: #333333;
+$dark-text-color: #f0f0f0;
+$dark-text-secondary: #b0b0b0;
+$dark-border-color: #444444;
+$dark-primary-color: #5c6bc0; // Indigo
+$dark-accent-color: #7e57c2; // Deep Purple
+$dark-warn-color: #e57373; // Light Red
+
+// Alkalmazzuk a sötét témát a body-ra
+body.dark-theme {
+  background-color: $dark-primary-bg;
+  color: $dark-text-color;
+  // Material kártyák
+  .mat-mdc-card {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+    border: 1px solid $dark-border-color;
+  }
+
+  .mat-mdc-card-title {
+    color: $dark-text-color;
+  }
+
+  .mat-mdc-card-subtitle {
+    color: $dark-text-secondary;
+  }
+  // Táblázatok
+  .mat-mdc-table {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+
+  .mat-mdc-row, .mat-mdc-header-row {
+    border-bottom-color: $dark-border-color;
+  }
+
+  .mat-mdc-cell, .mat-mdc-header-cell {
+    color: $dark-text-color;
+  }
+  // Eszköztár
+  .mat-toolbar {
+    background-color: $dark-secondary-bg;
+    color: $dark-text-color;
+  }
+  // Formok
+  .mat-mdc-form-field {
+    color: $dark-text-color;
+  }
+
+  .mat-mdc-select-value, .mat-mdc-select-arrow, .mat-label {
+    color: $dark-text-color;
+  }
+
+  .mat-mdc-input-element {
+    color: $dark-text-color;
+  }
+  // Gombok
+  .mat-mdc-button, .mat-mdc-raised-button, .mat-mdc-icon-button {
+    &.mat-primary {
+      color: $dark-primary-color;
+    }
+
+    &.mat-accent {
+      color: $dark-accent-color;
+    }
+
+    &.mat-warn {
+      color: $dark-warn-color;
+    }
+  }
+  // Dialógusok
+  .mat-mdc-dialog-container {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+  // Panelek
+  .mat-expansion-panel {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+
+    .mat-expansion-panel-header {
+      color: $dark-text-color;
+    }
+
+    .mat-expansion-panel-header-title,
+    .mat-expansion-panel-header-description {
+      color: $dark-text-color;
+    }
+  }
+  // Ikonok
+  .mat-icon {
+    color: $dark-text-color;
+  }
+  // Projektek specifikus stílusok
+  .project-card {
+    background-color: $dark-card-bg;
+    border-color: $dark-border-color;
+
+    .repo-link {
+      color: $dark-primary-color;
+    }
+  }
+  // Gráf nézet
+  .network-container, .loading-container {
+    background-color: $dark-secondary-bg;
+    border-color: $dark-border-color;
+  }
+
+  .legend {
+    background-color: $dark-secondary-bg;
+    border-color: $dark-border-color;
+
+    h3 {
+      color: $dark-text-color;
+    }
+  }
+  // Tab panelek
+  .mat-mdc-tab-header {
+    background-color: $dark-secondary-bg;
+  }
+
+  .mat-mdc-tab-label {
+    color: $dark-text-secondary;
+
+    &.mat-mdc-tab-label-active {
+      color: $dark-primary-color;
+    }
+  }
+
+  .mat-mdc-tab-body-content {
+    background-color: $dark-card-bg;
+  }
+  // Lista elemek
+  .mat-mdc-list, .mat-mdc-list-item, .mat-mdc-list-option {
+    color: $dark-text-color;
+    background-color: $dark-card-bg;
+  }
+  // Tooltip
+  .mat-tooltip {
+    background-color: $dark-secondary-bg;
+    color: $dark-text-color;
+  }
+  // Menük
+  .mat-mdc-menu-panel {
+    background-color: $dark-card-bg;
+
+    .mat-mdc-menu-item {
+      color: $dark-text-color;
+
+      &:hover:not([disabled]) {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      &.mat-mdc-menu-item-highlighted {
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+    }
+  }
+  // Input mezők
+  .mat-mdc-input-element::placeholder {
+    color: $dark-text-secondary;
+  }
+
+  .mat-mdc-form-field-underline {
+    background-color: $dark-border-color;
+  }
+  // Select komponensek
+  .mat-mdc-select-panel {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+  // Állapot jelzők
+  .status-active {
+    color: #81c784 !important; // Világosabb zöld sötét módban
+  }
+
+  .status-inactive {
+    color: #e57373 !important; // Világosabb piros sötét módban
+  }
+  // Linkek
+  a {
+    color: $dark-primary-color;
+
+    &:hover {
+      color: lighten($dark-primary-color, 10%);
+    }
+  }
+  // Lapozó
+  .mat-paginator {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+}

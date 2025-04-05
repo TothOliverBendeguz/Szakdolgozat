@@ -1,3 +1,4 @@
+// projects/project-relations/project-relation-dialog.component.ts
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -23,18 +24,12 @@ import { ProjectRelation } from '../../services/project-relation.service';
     MatButtonModule
   ],
   template: `
-    <h2 mat-dialog-title>{{data.isNew ? 'Új projekt kapcsolat' : 'Kapcsolat szerkesztése'}}</h2>
+    <h2 mat-dialog-title>Új projekt kapcsolat</h2>
     <div mat-dialog-content>
       <form #relationForm="ngForm">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Forrás projekt</mat-label>
-          <mat-select [(ngModel)]="relation.sourceProjectId" name="sourceProject" required 
-                     [disabled]="!data.isNew && data.relation.sourceProjectId !== null">
-            <mat-option *ngFor="let project of availableSourceProjects" [value]="project.id">
-              {{project.name}}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
+        <div class="source-project">
+          <strong>Forrás projekt:</strong> {{data.sourceProjectName}}
+        </div>
         
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Kapcsolat típusa</mat-label>
@@ -42,16 +37,13 @@ import { ProjectRelation } from '../../services/project-relation.service';
             <mat-option value="Depends on">Függ tőle</mat-option>
             <mat-option value="Related to">Kapcsolódik hozzá</mat-option>
             <mat-option value="Parent of">Szülője</mat-option>
-            <mat-option value="Child of">Gyermeke</mat-option>
-            <mat-option value="Blocks">Blokkolja</mat-option>
-            <mat-option value="Is blocked by">Blokkolva van általa</mat-option>
+            <mat-option value="Child of">Al-projekt</mat-option>
           </mat-select>
         </mat-form-field>
         
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Cél projekt</mat-label>
-          <mat-select [(ngModel)]="relation.targetProjectId" name="targetProject" required
-                     [disabled]="!data.isNew && data.relation.targetProjectId !== null">
+          <mat-select [(ngModel)]="relation.targetProjectId" name="targetProject" required>
             <mat-option *ngFor="let project of availableTargetProjects" [value]="project.id">
               {{project.name}}
             </mat-option>
@@ -68,7 +60,7 @@ import { ProjectRelation } from '../../services/project-relation.service';
       <button mat-button (click)="onCancel()">Mégsem</button>
       <button mat-raised-button color="primary" (click)="onSubmit()" 
               [disabled]="!relationForm.form.valid">
-        {{data.isNew ? 'Létrehozás' : 'Mentés'}}
+        Létrehozás
       </button>
     </div>
   `,
@@ -77,33 +69,49 @@ import { ProjectRelation } from '../../services/project-relation.service';
       width: 100%;
       margin-bottom: 15px;
     }
+    .source-project {
+      margin-bottom: 15px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      font-size: 16px;
+    }
   `]
 })
 export class ProjectRelationDialogComponent {
   relation: ProjectRelation;
-  availableSourceProjects: Project[] = [];
   availableTargetProjects: Project[] = [];
 
   constructor(
     public dialogRef: MatDialogRef<ProjectRelationDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: {
-      relation: ProjectRelation,
-      projects: Project[],
-      isNew: boolean
+      sourceProjectId: number,
+      sourceProjectName: string,
+      projects: Project[]
     }
   ) {
-    this.relation = { ...data.relation };
+    this.relation = {
+      sourceProjectId: data.sourceProjectId,
+      targetProjectId: 0,
+      relationType: '',
+      description: ''
+    };
     this.updateAvailableProjects();
   }
 
   updateAvailableProjects(): void {
-    this.availableSourceProjects = [...this.data.projects];
-    this.availableTargetProjects = this.relation.sourceProjectId
-      ? this.data.projects.filter(p => p.id !== this.relation.sourceProjectId)
-      : [...this.data.projects];
+    this.availableTargetProjects = this.data.projects.filter(
+      p => p.id !== this.data.sourceProjectId
+    );
   }
 
   onSubmit(): void {
+    if (!this.relation.sourceProjectId || !this.relation.targetProjectId || !this.relation.relationType) {
+      console.error('Invalid relation data', this.relation);
+      return;
+    }
+
+    console.log('Submitting relation:', this.relation);
     this.dialogRef.close(this.relation);
   }
 

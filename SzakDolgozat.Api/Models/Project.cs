@@ -33,6 +33,10 @@ namespace SzakDolgozat.Api.Models
 
         public string? CreatedById { get; set; }
 
+        public bool IsDeleted { get; set; } = false;
+
+        public DateTime? DeletedAt { get; set; }
+
         [ForeignKey("UserId")]
         public User? User { get; set; }
 

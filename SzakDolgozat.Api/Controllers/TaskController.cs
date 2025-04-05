@@ -8,7 +8,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks; // Ez fontos a Task<T> használatához
+using System.Threading.Tasks;
+using SzakDolgozat.Api.Services;
 
 namespace SzakDolgozat.Api.Controllers
 {
@@ -35,9 +36,9 @@ namespace SzakDolgozat.Api.Controllers
             {
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 var tasks = await _context.ProjectTasks
+                    .Where(t => t.ProjectId == projectId && !t.IsDeleted) 
                     .Include(t => t.TaskAssignments)
                         .ThenInclude(ta => ta.User)
-                    .Where(t => t.ProjectId == projectId)
                     .OrderByDescending(t => t.CreatedAt)
                     .ToListAsync();
 
@@ -67,6 +68,56 @@ namespace SzakDolgozat.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting project tasks");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpGet("project/{projectId}/deleted")]
+        public async Task<ActionResult<IEnumerable<TaskResponseDto>>> GetDeletedProjectTasks(int projectId)
+        {
+            try
+            {
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+                if (userRole != "1")
+                {
+                    return Forbid();
+                }
+
+                var tasks = await _context.ProjectTasks
+                    .Where(t => t.ProjectId == projectId && t.IsDeleted) 
+                    .Include(t => t.TaskAssignments)
+                        .ThenInclude(ta => ta.User)
+                    .OrderByDescending(t => t.CreatedAt)
+                    .ToListAsync();
+
+                var taskDtos = tasks.Select(t => new TaskResponseDto
+                {
+                    Id = t.Id,
+                    ProjectId = t.ProjectId,
+                    Title = t.Title,
+                    Description = t.Description,
+                    Status = t.Status,
+                    Priority = t.Priority,
+                    StartDate = t.StartDate,
+                    DueDate = t.DueDate,
+                    CompletedDate = t.CompletedDate,
+                    CreatedById = t.CreatedById,
+                    CreatedAt = t.CreatedAt,
+                    AssignedUsers = t.TaskAssignments.Select(ta => new UserDto
+                    {
+                        Id = ta.User.Id,
+                        UserName = ta.User.UserName,
+                        Email = ta.User.Email
+                    }).ToList()
+                });
+
+                return Ok(taskDtos);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting deleted project tasks");
                 return StatusCode(500, "Internal server error");
             }
         }
@@ -259,14 +310,52 @@ namespace SzakDolgozat.Api.Controllers
                     return Forbid();
                 }
 
-                _context.ProjectTasks.Remove(task);
+                task.IsDeleted = true;
+                task.DeletedAt = DateTime.UtcNow;
+                _context.Entry(task).State = EntityState.Modified;
                 await _context.SaveChangesAsync();
 
+                _logger.LogInformation($"Task {id} soft deleted by user {userId}");
                 return NoContent();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting task");
+                return StatusCode(500, "Internal server error");
+            }
+        }
+
+        [HttpDelete("purge/{id}")]
+        [Authorize(Policy = "RequireAdminRole")]
+        public async Task<IActionResult> PurgeTask(int id)
+        {
+            try
+            {
+                var task = await _context.ProjectTasks.FindAsync(id);
+                if (task == null)
+                {
+                    return NotFound();
+                }
+
+                var taskAssignments = await _context.TaskAssignments
+                    .Where(ta => ta.TaskId == id)
+                    .ToListAsync();
+
+                if (taskAssignments.Any())
+                {
+                    _context.TaskAssignments.RemoveRange(taskAssignments);
+                    await _context.SaveChangesAsync();
+                }
+
+                _context.ProjectTasks.Remove(task);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Task {id} permanently deleted by admin");
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error purging task");
                 return StatusCode(500, "Internal server error");
             }
         }

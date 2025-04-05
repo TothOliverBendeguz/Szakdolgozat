@@ -108,6 +108,7 @@ export class ProjectRelationsComponent implements OnInit {
   @Input() projectId?: number;
 
   relations: ProjectRelation[] = [];
+  projects: Project[] = []; 
   displayedColumns: string[] = ['sourceProject', 'relationType', 'targetProject', 'description', 'actions'];
 
   constructor(
@@ -119,7 +120,22 @@ export class ProjectRelationsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadRelations();
+    this.loadProjects(); 
   }
+
+
+  loadProjects(): void {
+    this.projectService.getProjects().subscribe({
+      next: (projects) => {
+        this.projects = projects;
+      },
+      error: (error) => {
+        console.error('Error loading projects:', error);
+        this.snackBar.open('Hiba történt a projektek betöltése közben', 'OK', { duration: 3000 });
+      }
+    });
+  }
+
 
   loadRelations(): void {
     if (this.projectId) {
@@ -146,34 +162,58 @@ export class ProjectRelationsComponent implements OnInit {
   }
 
   openAddRelationDialog(): void {
+    if (!this.projectId) {
+      this.snackBar.open('Először válasszon ki egy projektet', 'OK', { duration: 3000 });
+      return;
+    }
+
+    const sourceProject = this.projects.find(p => p.id === this.projectId);
+    if (!sourceProject) {
+      this.snackBar.open('A kiválasztott projekt nem található', 'OK', { duration: 3000 });
+      return;
+    }
+
     this.projectService.getProjects().subscribe({
       next: (projects) => {
         const dialogRef = this.dialog.open(ProjectRelationDialogComponent, {
           width: '500px',
           data: {
-            relation: {
-              sourceProjectId: this.projectId || null,
-              targetProjectId: null,
-              relationType: '',
-              description: ''
-            },
-            projects: projects,
-            isNew: true
+            sourceProjectId: this.projectId,
+            sourceProjectName: sourceProject.name,
+            projects: projects
           }
         });
 
         dialogRef.afterClosed().subscribe(result => {
           if (result) {
-            this.projectRelationService.createRelation(result).subscribe({
-              next: () => {
-                this.snackBar.open('Kapcsolat sikeresen létrehozva', 'OK', { duration: 3000 });
-                this.loadRelations();
-              },
-              error: (error) => {
-                console.error('Error creating relation:', error);
-                this.snackBar.open('Hiba történt a kapcsolat létrehozása közben', 'OK', { duration: 3000 });
-              }
-            });
+            const sourceProject = this.projects.find((p: Project) => p.id === result.sourceProjectId);
+            const targetProject = this.projects.find((p: Project) => p.id === result.targetProjectId);
+
+            if (sourceProject && targetProject) {
+              const enrichedRelation = {
+                ...result,
+                sourceProjectName: sourceProject.name,
+                targetProjectName: targetProject.name
+              };
+
+              console.log('Sending enriched relation data:', enrichedRelation);
+
+              this.projectRelationService.createRelation(enrichedRelation).subscribe({
+                next: () => {
+                  this.snackBar.open('Kapcsolat sikeresen létrehozva', 'OK', { duration: 3000 });
+                  this.loadRelations();
+                },
+                error: (error) => {
+                  console.error('Error creating relation:', error);
+                  console.error('Error details:', error.error);
+                  this.snackBar.open('Hiba történt a kapcsolat létrehozása közben: ' +
+                    (error.error?.message || JSON.stringify(error.error) || 'Ismeretlen hiba'),
+                    'OK', { duration: 5000 });
+                }
+              });
+            } else {
+              this.snackBar.open('Hiba: Nem találhatók a kapcsolat projektjei', 'OK', { duration: 3000 });
+            }
           }
         });
       },

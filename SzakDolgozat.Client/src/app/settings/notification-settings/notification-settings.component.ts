@@ -38,37 +38,37 @@ import { NotificationService, NotificationPreference } from '../../services/noti
   ],
   template: `
     <div class="notification-settings">
-      <h3>Értesítési beállítások</h3>
+      <h3 class="section-heading">Értesítési beállítások</h3>
       
       <div class="settings-section">
-        <mat-slide-toggle [(ngModel)]="preferences.enabled">
+        <mat-slide-toggle [(ngModel)]="preferences.enabled" class="main-toggle">
           Értesítések engedélyezése
         </mat-slide-toggle>
 
-        <div *ngIf="preferences.enabled" class="settings-content mt-3">
-          <h4>Általános beállítások</h4>
+        <div *ngIf="preferences.enabled" class="settings-content">
+          <h4 class="subsection-heading">Általános beállítások</h4>
           
           <!-- Fix értesítések -->
-          <div class="fixed-notifications mb-3">
-            <mat-checkbox [(ngModel)]="alwaysNotifyOneDayBefore">
+          <div class="notification-option">
+            <mat-checkbox [(ngModel)]="alwaysNotifyOneDayBefore" class="important-option">
               Mindig értesítsen a határidő előtt 1 nappal
             </mat-checkbox>
           </div>
           
-          <mat-divider></mat-divider>
+          <mat-divider class="section-divider"></mat-divider>
           
           <!-- Előre beállított csomagok -->
-          <h4 class="mt-3">Értesítési gyakoriság</h4>
+          <h4 class="subsection-heading">Értesítési gyakoriság</h4>
           <p class="hint-text">Válassz az előre beállított értesítési csomagok közül, vagy állítsd be egyénileg.</p>
           
-          <mat-button-toggle-group [(ngModel)]="selectedPreset" (change)="onPresetChange()">
+          <mat-button-toggle-group [(ngModel)]="selectedPreset" (change)="onPresetChange()" class="preset-toggle">
             <mat-button-toggle value="standard">Standard</mat-button-toggle>
             <mat-button-toggle value="intensive">Intenzív</mat-button-toggle>
             <mat-button-toggle value="minimal">Minimális</mat-button-toggle>
             <mat-button-toggle value="custom">Egyéni</mat-button-toggle>
           </mat-button-toggle-group>
           
-          <div *ngIf="selectedPreset !== 'custom'" class="preset-description mt-2">
+          <div *ngIf="selectedPreset !== 'custom'" class="preset-description">
             <p *ngIf="selectedPreset === 'standard'">
               <strong>Standard:</strong> Értesítések 30 nappal a határidő előtt, hetente.
             </p>
@@ -80,26 +80,24 @@ import { NotificationService, NotificationPreference } from '../../services/noti
             </p>
           </div>
           
-          <div *ngIf="selectedPreset === 'custom'" class="custom-settings mt-3">
-            <div class="row">
-              <div class="col-md-6">
-                <mat-form-field appearance="outline">
-                  <mat-label>Értesítések kezdete (nappal a határidő előtt)</mat-label>
-                  <input matInput type="number" [(ngModel)]="preferences.daysBeforeDeadline" min="1" max="180">
-                </mat-form-field>
-              </div>
+          <div *ngIf="selectedPreset === 'custom'" class="custom-settings">
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Értesítések kezdete (nappal a határidő előtt)</mat-label>
+                <input matInput type="number" [(ngModel)]="preferences.daysBeforeDeadline" min="1" max="180">
+              </mat-form-field>
+            </div>
               
-              <div class="col-md-6">
-                <mat-form-field appearance="outline">
-                  <mat-label>Értesítések gyakorisága (naponta)</mat-label>
-                  <input matInput type="number" [(ngModel)]="preferences.frequencyInDays" min="1" max="14">
-                </mat-form-field>
-              </div>
+            <div class="form-row">
+              <mat-form-field appearance="outline" class="form-field">
+                <mat-label>Értesítések gyakorisága (naponta)</mat-label>
+                <input matInput type="number" [(ngModel)]="preferences.frequencyInDays" min="1" max="14">
+              </mat-form-field>
             </div>
           </div>
 
           <!-- Email értesítési beállítások -->
-          <mat-expansion-panel class="mt-3">
+          <mat-expansion-panel class="email-panel">
             <mat-expansion-panel-header>
               <mat-panel-title>
                 Email értesítések
@@ -110,14 +108,14 @@ import { NotificationService, NotificationPreference } from '../../services/noti
             </mat-expansion-panel-header>
 
             <div class="email-settings">
-              <mat-slide-toggle [(ngModel)]="preferences.emailEnabled" class="mb-3">
+              <mat-slide-toggle [(ngModel)]="preferences.emailEnabled" class="email-toggle">
                 Email értesítések engedélyezése
               </mat-slide-toggle>
 
-              <div *ngIf="preferences.emailEnabled">
+              <div *ngIf="preferences.emailEnabled" class="email-frequency">
                 <p class="hint-text">Az email értesítések az alkalmazáson belüli értesítésekkel együtt működnek, 
                   de beállíthatod, hogy ritkábban kapj email értesítéseket.</p>
-                <mat-form-field appearance="outline" class="full-width">
+                <mat-form-field appearance="outline" class="form-field">
                   <mat-label>Email értesítések gyakorisága (naponta)</mat-label>
                   <input matInput type="number" [(ngModel)]="preferences.emailFrequencyInDays" min="1" max="30">
                   <mat-hint>Állítsd magasabbra, mint az általános értesítési gyakoriság, ha ritkábban szeretnél emaileket kapni</mat-hint>
@@ -129,8 +127,8 @@ import { NotificationService, NotificationPreference } from '../../services/noti
       </div>
       
       <!-- Mentés gomb -->
-      <div class="actions mt-4">
-        <button mat-raised-button color="primary" (click)="saveSettings()">
+      <div class="actions">
+        <button mat-raised-button color="primary" (click)="saveSettings()" class="save-button">
           Beállítások mentése
         </button>
         <button mat-button (click)="resetSettings()">
@@ -139,19 +137,149 @@ import { NotificationService, NotificationPreference } from '../../services/noti
       </div>
     </div>
   `,
-  styles: [
-    // ...meglevő stílusok...
-    `
-    .full-width {
+  styles: [`
+    .notification-settings {
+      padding: 16px 0;
+    }
+    
+    .section-heading {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 24px;
+      color: #333;
+    }
+    
+    .subsection-heading {
+      font-size: 18px;
+      font-weight: 500;
+      margin-top: 28px;
+      margin-bottom: 16px;
+      color: #444;
+    }
+    
+    .settings-section {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid #eee;
+    }
+    
+    .settings-content {
+      margin-top: 24px;
+      padding-left: 8px;
+    }
+    
+    .section-divider {
+      margin: 32px 0 !important;
+      border-color: rgba(0, 0, 0, 0.1);
+    }
+    
+    .notification-option {
+      margin: 24px 0;
+    }
+    
+    .main-toggle {
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .important-option {
+      font-weight: 500;
+    }
+    
+    .hint-text {
+      color: rgba(0, 0, 0, 0.6);
+      margin-bottom: 16px;
+      font-style: italic;
+    }
+    
+    .preset-toggle {
+      width: 100%;
+      margin-bottom: 24px;
+    }
+    
+    .preset-description {
+      background-color: #e8eaf6;
+      padding: 16px;
+      border-radius: 4px;
+      margin-bottom: 24px;
+    }
+    
+    .preset-description p {
+      margin: 0;
+    }
+    
+    .custom-settings {
+      background-color: rgba(0, 0, 0, 0.03);
+      padding: 20px;
+      border-radius: 4px;
+      margin-bottom: 24px;
+    }
+    
+    .form-row {
+      margin-bottom: 20px;
+    }
+    
+    .form-field {
       width: 100%;
     }
+    
+    .email-panel {
+      margin-top: 28px !important;
+      margin-bottom: 24px !important;
+    }
+    
     .email-settings {
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
+      padding: 8px 0;
     }
-    `
-  ]
+    
+    .email-toggle {
+      margin-bottom: 16px;
+    }
+    
+    .email-frequency {
+      background-color: rgba(0, 0, 0, 0.02);
+      padding: 16px;
+      border-radius: 4px;
+      margin-top: 8px;
+    }
+    
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 16px;
+      margin-top: 32px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+    }
+    
+    .save-button {
+      min-width: 150px;
+    }
+    
+    ::ng-deep .mat-mdc-slide-toggle {
+      margin-bottom: 16px;
+    }
+    
+    ::ng-deep .mat-mdc-form-field {
+      margin-bottom: 16px;
+    }
+    
+    /* Javítás a mat-expansion-panel-hez */
+    ::ng-deep .mat-expansion-panel-body {
+      padding: 24px 16px !important;
+    }
+    
+    ::ng-deep .mat-expansion-panel-header {
+      padding: 16px 24px !important;
+      height: auto !important;
+      min-height: 60px !important;
+    }
+  `]
 })
 export class NotificationSettingsComponent implements OnInit {
   preferences: NotificationPreference = {
@@ -162,7 +290,7 @@ export class NotificationSettingsComponent implements OnInit {
     frequencyInDays: 7,
     onlyActiveProjects: true,
     onlyAssignedProjects: false,
-    // Új email mezők
+    alwaysNotifyOneDayBefore: true,
     emailEnabled: true,
     emailFrequencyInDays: 7
   };

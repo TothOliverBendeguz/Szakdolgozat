@@ -89,49 +89,68 @@ namespace SzakDolgozat.Api.Controllers
         {
             try
             {
-                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                // Naplózzuk a beérkező adatokat
+                _logger.LogInformation($"Creating relation: {System.Text.Json.JsonSerializer.Serialize(relationDto)}");
 
-                var isAdmin = userRole == "1";
-
-                if (!isAdmin)
+                // Validáljuk a beérkező adatokat
+                if (relationDto == null)
                 {
-                    // Ellenőrizzük, hogy a felhasználó rendelkezik-e megfelelő jogosultsággal
-                    var sourceProject = await _context.Projects.FindAsync(relationDto.SourceProjectId);
-                    var targetProject = await _context.Projects.FindAsync(relationDto.TargetProjectId);
-
-                    if (sourceProject == null || targetProject == null)
-                    {
-                        return NotFound("One or both projects not found");
-                    }
-
-                    var isSourceProjectOwner = sourceProject.UserId == userId;
-                    var isTargetProjectOwner = targetProject.UserId == userId;
-
-                    if (!isSourceProjectOwner && !isTargetProjectOwner)
-                    {
-                        return Forbid();
-                    }
+                    return BadRequest("Relation data is null");
                 }
 
-                // Ellenőrizzük, hogy ne legyen rekurzív kapcsolat
+                if (relationDto.SourceProjectId <= 0)
+                {
+                    return BadRequest("Source project ID must be positive");
+                }
+
+                if (relationDto.TargetProjectId <= 0)
+                {
+                    return BadRequest("Target project ID must be positive");
+                }
+
+                if (string.IsNullOrEmpty(relationDto.RelationType))
+                {
+                    return BadRequest("Relation type is required");
+                }
+                var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                // Ellenőrizzük a projektek létezését
+                var sourceProject = await _context.Projects.FindAsync(relationDto.SourceProjectId);
+                var targetProject = await _context.Projects.FindAsync(relationDto.TargetProjectId);
+
+                if (sourceProject == null || targetProject == null)
+                {
+                    return NotFound("One or both projects not found");
+                }
+
+                // Ellenőrizzük, hogy a felhasználó jogosult-e a kapcsolat létrehozására
+                var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+                var isAdmin = userRole == "1";
+                var isSourceProjectOwner = sourceProject.UserId == userId || sourceProject.CreatedById == userId;
+
+                if (!isAdmin && !isSourceProjectOwner)
+                {
+                    return Forbid();
+                }
+
+                // Ellenőrizzük, hogy ne legyen önkapcsolat
                 if (relationDto.SourceProjectId == relationDto.TargetProjectId)
                 {
                     return BadRequest("Cannot create a relation between a project and itself");
                 }
 
-                // Ellenőrizzük, hogy ne létezzen már ez a kapcsolat
+                // Ellenőrizzük, hogy ne létezzen már ilyen kapcsolat
                 var existingRelation = await _context.ProjectRelations
                     .AnyAsync(pr =>
                         pr.SourceProjectId == relationDto.SourceProjectId &&
-                        pr.TargetProjectId == relationDto.TargetProjectId &&
-                        pr.RelationType == relationDto.RelationType);
+                        pr.TargetProjectId == relationDto.TargetProjectId);
 
                 if (existingRelation)
                 {
-                    return BadRequest("This relation already exists");
+                    return BadRequest("A relation already exists between these projects");
                 }
 
+                // Létrehozzuk a kapcsolatot
                 var relation = new ProjectRelation
                 {
                     SourceProjectId = relationDto.SourceProjectId,
@@ -143,14 +162,46 @@ namespace SzakDolgozat.Api.Controllers
                 _context.ProjectRelations.Add(relation);
                 await _context.SaveChangesAsync();
 
+                // A kapcsolat fordított irányú létrehozása
+                string inverseRelationType = GetInverseRelationType(relationDto.RelationType);
+
+                if (!string.IsNullOrEmpty(inverseRelationType))
+                {
+                    var inverseRelation = new ProjectRelation
+                    {
+                        SourceProjectId = relationDto.TargetProjectId,
+                        TargetProjectId = relationDto.SourceProjectId,
+                        RelationType = inverseRelationType,
+                        Description = $"Automatikus fordított kapcsolat: {relationDto.Description}"
+                    };
+
+                    _context.ProjectRelations.Add(inverseRelation);
+                    await _context.SaveChangesAsync();
+                }
+
                 relationDto.Id = relation.Id;
+                relationDto.SourceProjectName = sourceProject.Name;
+                relationDto.TargetProjectName = targetProject.Name;
 
                 return CreatedAtAction(nameof(GetRelation), new { id = relation.Id }, relationDto);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating project relation");
-                return StatusCode(500, "Internal server error");
+                return StatusCode(500, new { message = "Internal server error: " + ex.Message });
+            }
+        }
+
+        // Segédmetódus a fordított kapcsolattípus meghatározásához
+        private string GetInverseRelationType(string relationType)
+        {
+            switch (relationType)
+            {
+                case "Depends on": return "Is depended on by";
+                case "Parent of": return "Child of";
+                case "Child of": return "Parent of";
+                case "Related to": return "Related to";
+                default: return null;
             }
         }
 

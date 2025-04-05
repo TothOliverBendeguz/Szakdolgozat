@@ -27,6 +27,10 @@ namespace SzakDolgozat.Api.Data
 
         public DbSet<ProjectRelation> ProjectRelations { get; set; }
 
+        public DbSet<UserActivityLog> UserActivityLogs { get; set; }
+
+        public DbSet<UserSettings> UserSettings { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -156,6 +160,13 @@ namespace SzakDolgozat.Api.Data
                     UserId = adminId
                 }
             );
+
+
+            modelBuilder.Entity<UserSettings>()
+                .HasOne(us => us.User)
+                .WithOne()
+                .HasForeignKey<UserSettings>(us => us.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
 
 

@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { NavbarComponent } from './navbar/navbar.component';
 import { CommonModule } from '@angular/common';
+import { ThemeService } from './services/theme.service';
+import { UserProfileService } from './services/user-profile.service';
 
 @Component({
   selector: 'app-root',
@@ -20,4 +22,26 @@ import { CommonModule } from '@angular/common';
     }
   `]
 })
-export class AppComponent { }
+export class AppComponent implements OnInit {
+  constructor(
+    private themeService: ThemeService,
+    private userProfileService: UserProfileService
+  ) { }
+
+  ngOnInit() {
+    // Initial load of user theme preferences
+    this.loadThemePreference();
+  }
+
+  private loadThemePreference() {
+    this.userProfileService.getUserSettings().subscribe({
+      next: (settings) => {
+        const isDarkMode = settings.uiTheme === 'dark';
+        this.themeService.applyTheme(isDarkMode);
+      },
+      error: (error) => {
+        console.error('Error loading theme setting:', error);
+      }
+    });
+  }
+}

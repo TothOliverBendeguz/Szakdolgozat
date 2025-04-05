@@ -13,6 +13,11 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatListModule } from '@angular/material/list';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatStepperModule } from '@angular/material/stepper';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatCardModule } from '@angular/material/card'; // Hiányzó import
 import { UserService, User } from '../../services/user.service';
 import { Project, ProjectUser } from '../../services/project.service';
 import { ProjectReport, ProjectReportService } from '../../services/project-report.service';
@@ -39,392 +44,691 @@ import { ProjectRelationsComponent } from '../project-relations/project-relation
     MatExpansionModule,
     MatListModule,
     MatTooltipModule,
+    MatStepperModule,
+    MatTabsModule,
+    MatBadgeModule,
+    MatDividerModule,
+    MatCardModule, // Hiányzó import a komponens imports listájában
     TaskListComponent,
     ProjectRelationsComponent
-
   ],
   template: `
-   <div class="dialog-container">
-     <h2 mat-dialog-title>Project Details</h2>
-     
-     <mat-dialog-content>
-       <div class="form-container">
-         <mat-form-field appearance="outline" class="full-width">
-           <mat-label>Project Name</mat-label>
-           <input matInput [(ngModel)]="data.name" [readonly]="!canEdit">
-         </mat-form-field>
-
-         <mat-form-field appearance="outline" class="full-width">
-           <mat-label>Project Manager</mat-label>
-           <input matInput [(ngModel)]="data.projectManager" [readonly]="!canEdit">
-         </mat-form-field>
-
-         <!-- Dátum és idő mezők -->
-         <div class="date-time-section">
-           <mat-form-field appearance="outline" class="date-field">
-             <mat-label>Start Date</mat-label>
-             <input matInput [matDatepicker]="startPicker" [(ngModel)]="startDate" [readonly]="!canEdit">
-             <mat-datepicker-toggle matIconSuffix [for]="startPicker" [disabled]="!canEdit"></mat-datepicker-toggle>
-             <mat-datepicker #startPicker></mat-datepicker>
-           </mat-form-field>
-
-           <mat-form-field appearance="outline" class="time-field">
-             <mat-label>Start Time</mat-label>
-             <input matInput type="time" [(ngModel)]="startTime" [readonly]="!canEdit">
-           </mat-form-field>
-         </div>
-
-         <div class="date-time-section">
-           <mat-form-field appearance="outline" class="date-field">
-             <mat-label>Planned End Date</mat-label>
-             <input matInput [matDatepicker]="endPicker" [(ngModel)]="endDate" [readonly]="!canEdit">
-             <mat-datepicker-toggle matIconSuffix [for]="endPicker" [disabled]="!canEdit"></mat-datepicker-toggle>
-             <mat-datepicker #endPicker></mat-datepicker>
-           </mat-form-field>
-
-           <mat-form-field appearance="outline" class="time-field">
-             <mat-label>End Time</mat-label>
-             <input matInput type="time" [(ngModel)]="endTime" [readonly]="!canEdit">
-           </mat-form-field>
-         </div>
-
-         <mat-form-field appearance="outline" class="full-width">
-           <mat-label>Description</mat-label>
-           <textarea matInput [(ngModel)]="data.description" [readonly]="!canEdit" rows="4"></textarea>
-         </mat-form-field>
-
-         <mat-form-field appearance="outline" class="full-width">
-           <mat-label>Repository URL</mat-label>
-           <input matInput [(ngModel)]="data.repository" [readonly]="!canEdit" placeholder="https://github.com/your-repo">
-           <a *ngIf="data.repository" [href]="data.repository" target="_blank" matSuffix>
-             <mat-icon>open_in_new</mat-icon>
-           </a>
-         </mat-form-field>
-
-         <mat-form-field appearance="outline" class="full-width">
-           <mat-label>Assigned Users</mat-label>
-           <mat-select [(ngModel)]="data.assignedUsers" [disabled]="!canEdit" multiple>
-             <mat-option *ngFor="let user of availableUsers" [value]="user">
-               {{user.email}} ({{user.userName}})
-             </mat-option>
-           </mat-select>
-         </mat-form-field>
-
-        <div class="assigned-users" *ngIf="data.assignedUsers?.length">
-            <h4>Assigned Users:</h4>
-            <mat-chip-listbox>
-                <mat-chip *ngFor="let user of data.assignedUsers"
-                          [removable]="canEdit"
-                          (removed)="removeUser(user)">
-                    {{user.email}}
-                    <mat-icon matChipRemove *ngIf="canEdit">cancel</mat-icon>
-                </mat-chip>
-            </mat-chip-listbox>
+    <div class="dialog-container">
+      <h2 mat-dialog-title>
+        <mat-icon class="title-icon" [ngClass]="{'active-project': data.isActive, 'inactive-project': !data.isActive}">
+          {{ data.isActive ? 'check_circle' : 'cancel' }}
+        </mat-icon>
+        {{ data.name }}
+        <div class="title-badge" *ngIf="documents.length > 0 || reports.length > 0">
+          <span class="badge-item" *ngIf="documents.length > 0" matTooltip="{{ documents.length }} csatolt dokumentum">
+            <mat-icon>attach_file</mat-icon>
+            {{ documents.length }}
+          </span>
+          <span class="badge-item" *ngIf="reports.length > 0" matTooltip="{{ reports.length }} jelentés">
+            <mat-icon>description</mat-icon>
+            {{ reports.length }}
+          </span>
         </div>
+      </h2>
+      
+      <mat-divider></mat-divider>
+      
+      <mat-dialog-content>
+        <mat-tab-group animationDuration="300ms" dynamicHeight>
+          <!-- Alapadatok fül -->
+          <mat-tab label="Alapadatok">
+            <div class="tab-content">
+              <div class="project-info-grid">
+                <div class="info-group">
+                  <h3 class="section-title">Projekt részletek</h3>
+                  
+                  <div class="info-row">
+                    <div class="info-label">Projektvezető:</div>
+                    <div class="info-value">{{ data.projectManager }}</div>
+                  </div>
+                  
+                  <div class="info-row">
+                    <div class="info-label">Állapot:</div>
+                    <div class="info-value" [ngClass]="{'status-active': data.isActive, 'status-inactive': !data.isActive}">
+                      {{ data.isActive ? 'Aktív' : 'Inaktív' }}
+                    </div>
+                  </div>
+                  
+                  <div class="info-row">
+                    <div class="info-label">Kezdési dátum:</div>
+                    <div class="info-value">{{ data.startDate | date:'yyyy. MM. dd. HH:mm' }}</div>
+                  </div>
+                  
+                  <div class="info-row">
+                    <div class="info-label">Tervezett befejezés:</div>
+                    <div class="info-value" [ngClass]="{'near-deadline': isNearDeadline()}">
+                      {{ data.plannedEndDate | date:'yyyy. MM. dd. HH:mm' }}
+                      <mat-icon *ngIf="isNearDeadline()" matTooltip="Közeledő határidő" class="deadline-icon">
+                        warning
+                      </mat-icon>
+                    </div>
+                  </div>
+                  
+                  <div class="info-row" *ngIf="data.repository">
+                    <div class="info-label">Repository:</div>
+                    <div class="info-value">
+                      <a [href]="data.repository" target="_blank" class="repo-link">
+                        <mat-icon>link</mat-icon>
+                        {{ data.repository }}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="info-group">
+                  <h3 class="section-title">Leírás</h3>
+                  <div class="info-description">{{ data.description || 'Nincs megadva leírás' }}</div>
+                </div>
+              </div>
+              
+              <mat-divider class="section-divider"></mat-divider>
+              
+              <div class="assigned-users-section">
+                <h3 class="section-title">Projektben résztvevők</h3>
+                <div class="assigned-users">
+                  <div *ngIf="data.assignedUsers && data.assignedUsers.length > 0" class="user-chips">
+                    <mat-chip *ngFor="let user of data.assignedUsers"
+                            class="user-chip"
+                            [matTooltip]="isOwner(user) ? 'Tulajdonos' : 'Résztvevő'">
+                      <div class="user-chip-content">
+                        <mat-icon *ngIf="isOwner(user)" class="owner-icon">star</mat-icon>
+                        <span>{{ user.userName }}</span>
+                        <span class="user-email">{{ user.email }}</span>
+                      </div>
+                    </mat-chip>
+                  </div>
+                  <div *ngIf="!data.assignedUsers || data.assignedUsers.length === 0" class="no-users">
+                    Nincsenek hozzárendelt felhasználók
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Csak módosítható mód esetén jelenítjük meg a szerkesztési felületet -->
+              <div *ngIf="canEdit" class="edit-section">
+                <mat-divider class="section-divider"></mat-divider>
+                <h3 class="section-title">Adatok szerkesztése</h3>
+                
+                <div class="edit-form-container">
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Projekt neve</mat-label>
+                      <input matInput [(ngModel)]="data.name" name="name">
+                    </mat-form-field>
+                  </div>
+                  
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Projektvezető</mat-label>
+                      <input matInput [(ngModel)]="data.projectManager" name="projectManager">
+                    </mat-form-field>
+                  </div>
+                  
+                  <div class="form-row date-time-section">
+                    <mat-form-field appearance="outline" class="date-field">
+                      <mat-label>Kezdési dátum</mat-label>
+                      <input matInput [matDatepicker]="startPicker" [(ngModel)]="startDate" name="startDate">
+                      <mat-datepicker-toggle matSuffix [for]="startPicker"></mat-datepicker-toggle>
+                      <mat-datepicker #startPicker></mat-datepicker>
+                    </mat-form-field>
 
-         <div class="status-section">
-           <p>Current Status: 
-             <span [class.active-status]="data.isActive" 
-                   [class.inactive-status]="!data.isActive">
-               {{data.isActive ? 'Active' : 'Inactive'}}
-             </span>
-           </p>
-         </div>
+                    <mat-form-field appearance="outline" class="time-field">
+                      <mat-label>Kezdési idő</mat-label>
+                      <input matInput type="time" [(ngModel)]="startTime" name="startTime">
+                    </mat-form-field>
+                  </div>
+                  
+                  <div class="form-row date-time-section">
+                    <mat-form-field appearance="outline" class="date-field">
+                      <mat-label>Tervezett befejezés</mat-label>
+                      <input matInput [matDatepicker]="endPicker" [(ngModel)]="endDate" name="endDate">
+                      <mat-datepicker-toggle matSuffix [for]="endPicker"></mat-datepicker-toggle>
+                      <mat-datepicker #endPicker></mat-datepicker>
+                    </mat-form-field>
 
-         <!-- Reports section -->
-         <div class="reports-section">
-           <h3>Project Reports</h3>
-           
-           <mat-expansion-panel *ngIf="canEdit">
-             <mat-expansion-panel-header>
-               <mat-panel-title>Add New Report</mat-panel-title>
-             </mat-expansion-panel-header>
+                    <mat-form-field appearance="outline" class="time-field">
+                      <mat-label>Befejezési idő</mat-label>
+                      <input matInput type="time" [(ngModel)]="endTime" name="endTime">
+                    </mat-form-field>
+                  </div>
+                  
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Leírás</mat-label>
+                      <textarea matInput [(ngModel)]="data.description" name="description" rows="4"></textarea>
+                    </mat-form-field>
+                  </div>
+                  
+                  <div class="form-row">
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Repository</mat-label>
+                      <input matInput [(ngModel)]="data.repository" name="repository">
+                      <mat-icon matSuffix>link</mat-icon>
+                    </mat-form-field>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </mat-tab>
+          
+          <!-- Feladatok fül -->
+          <mat-tab label="Feladatok">
+            <div class="tab-content">
+              <app-task-list [projectId]="data.id"></app-task-list>
+            </div>
+          </mat-tab>
+          
+          <!-- Dokumentumok fül -->
+          <mat-tab label="Dokumentumok" [disabled]="!data.id">
+            <div class="tab-content">
+              <div class="section-header">
+                <h3 class="section-title">Projekt dokumentumok</h3>
+                <div *ngIf="canEdit" class="section-actions">
+                  <input
+                    type="file"
+                    #fileInput
+                    style="display: none"
+                    (change)="onFileSelected($event)"
+                  >
+                  <button mat-raised-button color="primary" (click)="fileInput.click()">
+                    <mat-icon>upload_file</mat-icon>
+                    Dokumentum feltöltése
+                  </button>
+                </div>
+              </div>
+              
+              <div *ngIf="documents.length === 0" class="no-items">
+                <mat-icon>folder_open</mat-icon>
+                <p>Nincsenek dokumentumok feltöltve ehhez a projekthez</p>
+              </div>
+              
+              <mat-list *ngIf="documents.length > 0" class="documents-list">
+                <mat-list-item *ngFor="let doc of documents" class="document-item">
+                  <div class="document-info">
+                    <div class="document-type-icon">
+                      <mat-icon>{{getDocumentIcon(doc.fileName)}}</mat-icon>
+                    </div>
+                    <div class="document-details">
+                      <div class="document-name">{{doc.fileName}}</div>
+                      <div class="document-meta">
+                        <span class="meta-type">{{getDocumentType(doc.fileName)}}</span>
+                        <span class="meta-size">{{formatFileSize(doc.fileSize)}}</span>
+                        <span class="meta-date">{{doc.uploadedAt | date:'yyyy.MM.dd. HH:mm'}}</span>
+                        <span class="meta-user" *ngIf="doc.createdBy">{{doc.createdBy.userName}}</span>
+                      </div>
+                    </div>
+                    <div class="document-actions">
+                      <button mat-icon-button color="primary" (click)="downloadDocument(doc)"
+                              matTooltip="Letöltés">
+                        <mat-icon>download</mat-icon>
+                      </button>
+                      <button mat-icon-button color="warn" *ngIf="canEdit"
+                              (click)="deleteDocument(doc)"
+                              matTooltip="Törlés">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    </div>
+                  </div>
+                  <mat-divider></mat-divider>
+                </mat-list-item>
+              </mat-list>
+            </div>
+          </mat-tab>
+          
+          <!-- Jelentések fül -->
+          <mat-tab label="Jelentések" [disabled]="!data.id">
+            <div class="tab-content">
+              <div class="section-header">
+                <h3 class="section-title">Projekt jelentések</h3>
+                <div *ngIf="canEdit" class="section-actions">
+                  <button mat-raised-button color="primary" (click)="openAddReportForm()">
+                    <mat-icon>post_add</mat-icon>
+                    Új jelentés
+                  </button>
+                </div>
+              </div>
+              
+              <div *ngIf="showAddReportForm && canEdit" class="report-form">
+                <mat-card>
+                  <mat-card-header>
+                    <mat-card-title>Új jelentés létrehozása</mat-card-title>
+                  </mat-card-header>
+                  <mat-card-content>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Jelentés címe</mat-label>
+                      <input matInput [(ngModel)]="newReport.title" required>
+                    </mat-form-field>
 
-             <mat-form-field appearance="outline" class="full-width">
-               <mat-label>Report Title</mat-label>
-               <input matInput [(ngModel)]="newReport.title" required>
-             </mat-form-field>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Jelentés típusa</mat-label>
+                      <mat-select [(ngModel)]="newReport.reportType" required>
+                        <mat-option value="Progress">Haladási jelentés</mat-option>
+                        <mat-option value="Issue">Probléma jelentés</mat-option>
+                        <mat-option value="Milestone">Mérföldkő jelentés</mat-option>
+                      </mat-select>
+                    </mat-form-field>
 
-             <mat-form-field appearance="outline" class="full-width">
-               <mat-label>Report Type</mat-label>
-               <mat-select [(ngModel)]="newReport.reportType" required>
-                 <mat-option value="Progress">Progress Report</mat-option>
-                 <mat-option value="Issue">Issue Report</mat-option>
-                 <mat-option value="Milestone">Milestone Report</mat-option>
-               </mat-select>
-             </mat-form-field>
-
-             <mat-form-field appearance="outline" class="full-width">
-               <mat-label>Content</mat-label>
-               <textarea matInput [(ngModel)]="newReport.content" rows="4" required></textarea>
-             </mat-form-field>
-
-             <button mat-raised-button color="primary" (click)="submitReport()">
-               Submit Report
-             </button>
-           </mat-expansion-panel>
-
-           <div class="reports-list">
-             <mat-expansion-panel *ngFor="let report of reports">
-               <mat-expansion-panel-header>
-                 <mat-panel-title>
-                   {{report.title}}
-                   <span class="report-type">{{report.reportType}}</span>
-                 </mat-panel-title>
-                 <mat-panel-description>
-                   {{report.createdAt | date:'medium'}}
-                 </mat-panel-description>
-               </mat-expansion-panel-header>
-               
-               <p>{{report.content}}</p>
-               <p class="report-author">By: {{report.createdBy?.userName}}</p>
-             </mat-expansion-panel>
-           </div>
-         </div>
-
-
-<div class="documentation-section">
-  <h3>Project Documentation</h3>
-  <div class="upload-section" *ngIf="canEdit">
-    <input
-      type="file"
-      #fileInput
-      style="display: none"
-      (change)="onFileSelected($event)"
-    >
-    <button
-      mat-stroked-button
-      color="primary"
-      (click)="fileInput.click()"
-      [disabled]="!canEdit"
-      class="upload-button"
-    >
-      <mat-icon>upload_file</mat-icon>
-      Upload Documentation
-    </button>
-  </div>
-
-  <div class="tasks-section">
-  <h3>Projekt feladatok</h3>
-  <app-task-list [projectId]="data.id"></app-task-list>
-</div>
-
-
-  <mat-expansion-panel class="documents-panel">
-    <mat-expansion-panel-header>
-      <mat-panel-title>
-        Uploaded Documents ({{documents.length}})
-      </mat-panel-title>
-    </mat-expansion-panel-header>
-
-    <div *ngIf="documents.length > 0">
-      <mat-list>
-        <mat-list-item *ngFor="let doc of documents" class="document-item">
-          <mat-icon matListItemIcon>insert_drive_file</mat-icon>
-          <div matListItemTitle>{{doc.fileName}}</div>
-          <div matListItemLine>
-            Uploaded by: {{doc.createdBy?.userName}} |
-            {{doc.uploadedAt | date:'medium'}}
-          </div>
-          <div matListItemMeta>
-            <button mat-icon-button color="primary" (click)="downloadDocument(doc)"
-                    matTooltip="Download">
-              <mat-icon>download</mat-icon>
-            </button>
-            <button mat-icon-button color="warn" *ngIf="canEdit"
-                    (click)="deleteDocument(doc)"
-                    matTooltip="Delete">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
-        </mat-list-item>
-      </mat-list>
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Tartalom</mat-label>
+                      <textarea matInput [(ngModel)]="newReport.content" rows="6" required></textarea>
+                    </mat-form-field>
+                  </mat-card-content>
+                  <mat-card-actions align="end">
+                    <button mat-button (click)="cancelReport()">Mégsem</button>
+                    <button mat-raised-button color="primary" (click)="submitReport()"
+                            [disabled]="!newReport.title || !newReport.content || !newReport.reportType">
+                      Jelentés mentése
+                    </button>
+                  </mat-card-actions>
+                </mat-card>
+              </div>
+              
+              <div *ngIf="reports.length === 0 && !showAddReportForm" class="no-items">
+                <mat-icon>description</mat-icon>
+                <p>Nincsenek jelentések ehhez a projekthez</p>
+              </div>
+              
+              <div *ngIf="reports.length > 0" class="reports-container">
+                <mat-accordion>
+                  <mat-expansion-panel *ngFor="let report of reports" class="report-panel">
+                    <mat-expansion-panel-header>
+                      <mat-panel-title class="report-title">
+                        <span class="report-type-badge" 
+                              [ngClass]="{
+                                'progress-badge': report.reportType === 'Progress',
+                                'issue-badge': report.reportType === 'Issue',
+                                'milestone-badge': report.reportType === 'Milestone'
+                              }">
+                          {{ getReportTypeText(report.reportType) }}
+                        </span>
+                        {{ report.title }}
+                      </mat-panel-title>
+                      <mat-panel-description class="report-date">
+                        {{ report.createdAt | date:'yyyy.MM.dd. HH:mm' }}
+                      </mat-panel-description>
+                    </mat-expansion-panel-header>
+                    
+                    <div class="report-content">
+                      <p>{{ report.content }}</p>
+                      <div class="report-footer">
+                        <span class="report-author" *ngIf="report.createdBy">
+                          Készítette: {{ report.createdBy.userName }}
+                        </span>
+                      </div>
+                    </div>
+                  </mat-expansion-panel>
+                </mat-accordion>
+              </div>
+            </div>
+          </mat-tab>
+          
+          <!-- Kapcsolatok fül -->
+          <mat-tab label="Kapcsolatok" [disabled]="!data.id">
+            <div class="tab-content">
+              <app-project-relations [projectId]="data.id"></app-project-relations>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+      </mat-dialog-content>
+      
+      <mat-divider></mat-divider>
+      
+      <mat-dialog-actions align="end">
+        <button mat-stroked-button color="primary" (click)="toggleStatus()" *ngIf="canToggleStatus()">
+          {{data.isActive ? 'Deaktiválás' : 'Aktiválás'}}
+        </button>
+        <button mat-stroked-button color="primary" (click)="saveChanges()" *ngIf="canEdit">
+          Változtatások mentése
+        </button>
+        <button mat-button color="basic" (click)="close()">Bezárás</button>
+      </mat-dialog-actions>
     </div>
-
-    <div *ngIf="documents.length === 0" class="no-documents">
-      <p>No documents uploaded yet</p>
-    </div>
-
-  </mat-expansion-panel>
-</div>
-
-     <mat-dialog-actions align="end">
-      <button mat-stroked-button color="primary" (click)="toggleStatus()" *ngIf="authService.isAdmin()">
-         {{data.isActive ? 'Deactivate' : 'Activate'}} Project
-      </button>
-       <button mat-stroked-button color="primary" (click)="saveChanges()" *ngIf="canEdit">
-         Save Changes
-       </button>
-       <button mat-button color="warn" (click)="close()">Close</button>
-     </mat-dialog-actions>
-   </div>
-
-
-<div class="project-relations-section">
-  <h3>Projekt kapcsolatok</h3>
-  <app-project-relations [projectId]="data.id"></app-project-relations>
-</div>
- `,
+  `,
   styles: [`
-   .dialog-container {
-     padding: 20px;
-     min-width: 500px;
-   }
-
-   .form-container {
-     display: flex;
-     flex-direction: column;
-     gap: 16px;
-   }
-
-   .full-width {
-     width: 100%;
-   }
-
-   .date-time-section {
-     display: flex;
-     gap: 16px;
-     margin-bottom: 15px;
-   }
-   
-   .date-field {
-     flex: 3;
-   }
-   
-   .time-field {
-     flex: 1;
-   }
-
-   .status-section {
-     background-color: #f5f5f5;
-     padding: 16px;
-     border-radius: 4px;
-   }
-
-   .active-status {
-     color: #4CAF50;
-     font-weight: bold;
-   }
-
-   .inactive-status {
-     color: #F44336;
-     font-weight: bold;
-   }
-
-   .documentation-section {
-     margin-top: 20px;
-     padding-top: 20px;
-     border-top: 1px solid #e0e0e0;
-   }
-
-   .documentation-section h3 {
-     margin: 0 0 16px 0;
-     font-size: 16px;
-   }
-
-   .upload-button {
-     display: flex;
-     align-items: center;
-     gap: 8px;
-   }
-
-   .documentation-note {
-     margin-top: 8px;
-     color: #666;
-     font-style: italic;
-   }
-
-   mat-dialog-actions {
-     margin-top: 24px;
-   }
-
-   a {
-     color: #3f51b5;
-     text-decoration: none;
-   }
-
-   .assigned-users {
-     margin-top: 8px;
-   }
-
-   mat-chip-listbox {
-     display: flex;
-     flex-wrap: wrap;
-     gap: 8px;
-   }
-
-   .reports-section {
-     margin-top: 24px;
-     border-top: 1px solid #e0e0e0;
-     padding-top: 24px;
-   }
-
-   .reports-list {
-     margin-top: 16px;
-   }
-
-   .report-type {
-     margin-left: 8px;
-     font-size: 0.8em;
-     color: #666;
-   }
-
-   .report-author {
-     font-size: 0.9em;
-     color: #666;
-     margin-top: 8px;
-   }
-
-   .upload-section {
-     display: flex;
-     align-items: center;
-     gap: 16px;
-     margin-bottom: 16px;
-   }
-
-   .documents-list {
-     margin-top: 16px;
-   }
-
-   mat-list-item {
-     margin-bottom: 8px;
-   }
-   .documents-panel {
-  margin-top: 16px;
-}
-
-.document-item {
-  border-bottom: 1px solid #eee;
-  margin-bottom: 8px;
-}
-
-.no-documents {
-  text-align: center;
-  color: #666;
-  padding: 16px;
-}
-
-mat-list-item {
-  height: auto !important;
-  margin: 16px 0;
-}
-
-[matListItemMeta] {
-  display: flex;
-  gap: 8px;
-}
-.tasks-section {
-  margin-top: 20px;
-  border-top: 1px solid #e0e0e0;
-  padding-top: 20px;
-}
-
-
- `]
+    .dialog-container {
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 90vh;
+    }
+    
+    mat-dialog-content {
+      max-height: calc(90vh - 128px);
+      overflow-y: auto;
+    }
+    
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 24px;
+      margin-bottom: 16px;
+    }
+    
+    .title-icon {
+      margin-right: 8px;
+    }
+    
+    .active-project {
+      color: #4CAF50;
+    }
+    
+    .inactive-project {
+      color: #F44336;
+    }
+    
+    .title-badge {
+      margin-left: auto;
+      display: flex;
+      gap: 12px;
+    }
+    
+    .badge-item {
+      display: flex;
+      align-items: center;
+      background-color: #f0f0f0;
+      border-radius: 16px;
+      padding: 4px 8px;
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.7);
+    }
+    
+    .badge-item mat-icon {
+      font-size: 16px;
+      height: 16px;
+      width: 16px;
+      margin-right: 4px;
+    }
+    
+    .section-divider {
+      margin: 24px 0;
+    }
+    
+    .section-title {
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 16px;
+      color: rgba(0, 0, 0, 0.8);
+    }
+    
+    .tab-content {
+      padding: 24px 8px;
+    }
+    
+    .status-active {
+      color: #4CAF50;
+      font-weight: 500;
+    }
+    
+    .status-inactive {
+      color: #F44336;
+      font-weight: 500;
+    }
+    
+    .near-deadline {
+      color: #FF9800;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+    }
+    
+    .deadline-icon {
+      color: #F44336;
+      margin-left: 8px;
+      font-size: 18px;
+      height: 18px;
+      width: 18px;
+    }
+    
+    .project-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    
+    .info-row {
+      display: flex;
+      margin-bottom: 12px;
+    }
+    
+    .info-label {
+      width: 160px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.7);
+    }
+    
+    .info-value {
+      flex: 1;
+    }
+    
+    .info-description {
+      background-color: #f9f9f9;
+      padding: 16px;
+      border-radius: 4px;
+      border-left: 4px solid #2196F3;
+      white-space: pre-line;
+      min-height: 100px;
+    }
+    
+    .repo-link {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #2196F3;
+      text-decoration: none;
+    }
+    
+    .repo-link:hover {
+      text-decoration: underline;
+    }
+    
+    .assigned-users-section {
+      margin-top: 24px;
+    }
+    
+    .user-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .user-chip {
+      background-color: #e0e0e0;
+      border-radius: 16px;
+      padding: 4px 8px;
+    }
+    
+    .user-chip-content {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .owner-icon {
+      color: #FFD700;
+      font-size: 16px;
+      height: 16px;
+      width: 16px;
+    }
+    
+    .user-email {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.6);
+      margin-left: 4px;
+    }
+    
+    .no-users {
+      color: rgba(0, 0, 0, 0.6);
+      font-style: italic;
+    }
+    
+    .edit-section {
+      margin-top: 24px;
+    }
+    
+    .edit-form-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .form-row {
+      width: 100%;
+    }
+    
+    .full-width {
+      width: 100%;
+    }
+    
+    .date-time-section {
+      display: flex;
+      gap: 16px;
+      width: 100%;
+    }
+    
+    .date-field {
+      flex: 3;
+    }
+    
+    .time-field {
+      flex: 1;
+    }
+    
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    
+    .documents-list {
+      padding: 0;
+    }
+    
+    .document-item {
+      height: auto !important;
+      padding: 12px 0;
+    }
+    
+    .document-info {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .document-type-icon {
+      color: #607D8B;
+    }
+    
+    .document-details {
+      flex: 1;
+    }
+    
+    .document-name {
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    
+    .document-meta {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.6);
+      display: flex;
+      gap: 12px;
+    }
+    
+    .document-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .no-items {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 48px 0;
+      color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .no-items mat-icon {
+      font-size: 48px;
+      height: 48px;
+      width: 48px;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+    
+    .report-form {
+      margin-bottom: 24px;
+    }
+    
+    .report-panel {
+      margin-bottom: 12px;
+    }
+    
+    .report-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .report-type-badge {
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      color: white;
+    }
+    
+    .progress-badge {
+      background-color: #4CAF50;
+    }
+    
+    .issue-badge {
+      background-color: #F44336;
+    }
+    
+    .milestone-badge {
+      background-color: #2196F3;
+    }
+    
+    .report-date {
+      color: rgba(0, 0, 0, 0.6);
+      font-size: 14px;
+    }
+    
+    .report-content {
+      padding: 16px 0;
+      white-space: pre-line;
+    }
+    
+    .report-footer {
+      display: flex;
+      justify-content: flex-end;
+      font-size: 14px;
+      color: rgba(0, 0, 0, 0.6);
+      margin-top: 16px;
+    }
+    
+    @media (max-width: 768px) {
+      .project-info-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .date-time-section {
+        flex-direction: column;
+        gap: 8px;
+      }
+    }
+  `]
 })
 export class ProjectDetailsDialogComponent implements OnInit {
-  availableUsers: User[] = [];
-  canEdit: boolean = true;
+  canEdit: boolean = false;
+  currentUserId: string | null = null;
   reports: ProjectReport[] = [];
   documents: ProjectDocument[] = [];
   newReport: Partial<ProjectReport> = {
@@ -432,6 +736,7 @@ export class ProjectDetailsDialogComponent implements OnInit {
     content: '',
     reportType: 'Progress'
   };
+  showAddReportForm: boolean = false;
 
   startDate: Date = new Date();
   startTime: string = '';
@@ -445,21 +750,48 @@ export class ProjectDetailsDialogComponent implements OnInit {
     private userService: UserService,
     public authService: AuthService,
     private documentService: ProjectDocumentService
-  ) { }
+  ) {
+    this.currentUserId = this.authService.getCurrentUserId();
+
+    // Inicializáljuk az assignedUsers tömböt, ha még undefined
+    if (!this.data.assignedUsers) {
+      this.data.assignedUsers = [];
+    }
+
+    // A developer felhasználó szerkesztheti a saját projektjét (tulajdonos vagy létrehozó)
+    this.canEdit = this.authService.isAdmin() ||
+      (this.authService.isDeveloper() &&
+        (this.data.userId === this.currentUserId ||
+          this.data.createdById === this.currentUserId));
+  }
 
   ngOnInit() {
     this.initializeDateTimeFields();
-
     this.loadReports();
-    this.loadUsers();
+
     if (this.data.id) {
       this.loadDocuments();
     }
   }
 
-  initializeDateTimeFields() {
-    console.log('Initializing date-time fields with data:', this.data);
+  canToggleStatus(): boolean {
+    return this.authService.isAdmin() ||
+      (this.authService.isDeveloper() &&
+        (this.data.userId === this.currentUserId ||
+          this.data.createdById === this.currentUserId));
+  }
 
+  isNearDeadline(): boolean {
+    if (!this.data.plannedEndDate) return false;
+
+    const now = new Date();
+    const deadline = new Date(this.data.plannedEndDate);
+    const diffDays = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 3600 * 24));
+
+    return diffDays >= 0 && diffDays <= 7;
+  }
+
+  initializeDateTimeFields() {
     if (this.data.startDate) {
       const startDateTime = new Date(this.data.startDate);
 
@@ -470,9 +802,6 @@ export class ProjectDetailsDialogComponent implements OnInit {
       );
 
       this.startTime = this.formatTimeFromDate(startDateTime);
-
-      console.log('Extracted startDate:', this.startDate);
-      console.log('Extracted startTime:', this.startTime);
     }
 
     if (this.data.plannedEndDate) {
@@ -485,9 +814,6 @@ export class ProjectDetailsDialogComponent implements OnInit {
       );
 
       this.endTime = this.formatTimeFromDate(endDateTime);
-
-      console.log('Extracted endDate:', this.endDate);
-      console.log('Extracted endTime:', this.endTime);
     }
   }
 
@@ -495,146 +821,32 @@ export class ProjectDetailsDialogComponent implements OnInit {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   }
 
-  fixTimeZoneIssues() {
-    if (this.data.startDate) {
-      if (typeof this.data.startDate === 'string') {
-        this.data.startDate = new Date(this.data.startDate);
-      }
-      const currentOffset = this.data.startDate.getTimezoneOffset();
-      if (currentOffset !== 0) {
-        console.log('Korrigálás startDate időzóna eltérés:', currentOffset);
-        const correctedDate = new Date(this.data.startDate.getTime());
-        this.data.startDate = correctedDate;
-      }
-    }
+  loadReports() {
+    if (!this.data.id) return;
 
-    if (this.data.plannedEndDate) {
-      if (typeof this.data.plannedEndDate === 'string') {
-        this.data.plannedEndDate = new Date(this.data.plannedEndDate);
-      }
-      const currentOffset = this.data.plannedEndDate.getTimezoneOffset();
-      if (currentOffset !== 0) {
-        console.log('Korrigálás plannedEndDate időzóna eltérés:', currentOffset);
-        const correctedDate = new Date(this.data.plannedEndDate.getTime());
-        this.data.plannedEndDate = correctedDate;
-      }
-    }
-  }
-
-  extractDateAndTime() {
-    console.log('Extracting date and time from:', {
-      startDate: this.data.startDate,
-      endDate: this.data.plannedEndDate
-    });
-
-    if (this.data.startDate) {
-      const startDateTime = new Date(this.data.startDate);
-      this.startDate = new Date(
-        startDateTime.getFullYear(),
-        startDateTime.getMonth(),
-        startDateTime.getDate()
-      );
-      this.startTime = `${startDateTime.getHours().toString().padStart(2, '0')}:${startDateTime.getMinutes().toString().padStart(2, '0')}`;
-      console.log('Extracted start time:', this.startTime);
-    }
-
-    if (this.data.plannedEndDate) {
-      const endDateTime = new Date(this.data.plannedEndDate);
-      this.endDate = new Date(
-        endDateTime.getFullYear(),
-        endDateTime.getMonth(),
-        endDateTime.getDate()
-      );
-      this.endTime = `${endDateTime.getHours().toString().padStart(2, '0')}:${endDateTime.getMinutes().toString().padStart(2, '0')}`;
-      console.log('Extracted end time:', this.endTime);
-    }
-  }
-
-  formatTime(date: Date): string {
-    return date.getHours().toString().padStart(2, '0') + ':' +
-      date.getMinutes().toString().padStart(2, '0');
-  }
-
-  combineDateAndTime(date: Date, timeString: string): Date {
-    const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
-    const [hours, minutes] = timeString.split(':').map(Number);
-
-    dateOnly.setHours(hours, minutes, 0, 0);
-
-    return dateOnly;
-  }
-
-  loadUsers() {
-    this.userService.getUsers().subscribe({
-      next: (users) => this.availableUsers = users,
-      error: (error) => console.error('Error loading users:', error)
+    this.reportService.getProjectReports(this.data.id).subscribe({
+      next: (reports) => this.reports = reports,
+      error: (error) => console.error('Error loading reports:', error)
     });
   }
 
   loadDocuments() {
-    const projectId = this.data.id;
-    if (projectId === undefined) {
-      return;
-    }
+    if (!this.data.id) return;
 
-    this.documentService.getProjectDocuments(projectId).subscribe({
-      next: (docs: ProjectDocument[]) => this.documents = docs,
-      error: (error: Error) => console.error('Error loading documents:', error)
+    this.documentService.getProjectDocuments(this.data.id).subscribe({
+      next: (docs) => this.documents = docs,
+      error: (error) => console.error('Error loading documents:', error)
     });
   }
 
-  submitReport() {
-    if (!this.newReport.title || !this.newReport.content || !this.data.id || !this.newReport.reportType) {
-      return;
-    }
-
-    const report: ProjectReport = {
-      projectId: this.data.id,
-      title: this.newReport.title,
-      content: this.newReport.content,
-      reportType: this.newReport.reportType
-    };
-
-    this.reportService.createReport(report).subscribe({
-      next: () => {
-        this.loadReports();
-        this.newReport = { title: '', content: '', reportType: 'Progress' };
-      },
-      error: (error) => {
-        console.error('Error:', error);
-      }
-    });
-  }
-
-  loadReports() {
-    const projectId = this.data.id;
-    if (projectId === undefined) {
-      return;
-    }
-
-    this.reportService.getProjectReports(projectId).subscribe({
-      next: (reports) => this.reports = reports,
-      error: (error: Error) => console.error('Error loading reports:', error)
-    });
-  }
-
-  removeUser(user: User | ProjectUser): void {
-    if (this.data.assignedUsers) {
-      const index = this.data.assignedUsers.findIndex(u => u.id === user.id);
-      if (index >= 0) {
-        this.data.assignedUsers.splice(index, 1);
-      }
-    }
-  }
-
-  onFileSelected(event: any) {
-    const file = event.target.files[0];
+  onFileSelected(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
     if (file && this.data.id) {
       this.documentService.uploadDocument(this.data.id, file).subscribe({
         next: (doc) => {
           this.documents.push(doc);
-          event.target.value = '';
+          target.value = '';
         },
         error: (error) => console.error('Error uploading document:', error)
       });
@@ -655,7 +867,7 @@ export class ProjectDetailsDialogComponent implements OnInit {
   }
 
   deleteDocument(doc: ProjectDocument) {
-    if (confirm('Are you sure you want to delete this document?')) {
+    if (confirm('Biztosan törölni szeretnéd ezt a dokumentumot?')) {
       this.documentService.deleteDocument(doc.id).subscribe({
         next: () => {
           const index = this.documents.indexOf(doc);
@@ -668,30 +880,133 @@ export class ProjectDetailsDialogComponent implements OnInit {
     }
   }
 
+  openAddReportForm() {
+    this.showAddReportForm = true;
+    this.newReport = {
+      title: '',
+      content: '',
+      reportType: 'Progress'
+    };
+  }
+
+  cancelReport() {
+    this.showAddReportForm = false;
+  }
+
+  submitReport() {
+    if (!this.newReport.title || !this.newReport.content || !this.data.id || !this.newReport.reportType) {
+      return;
+    }
+
+    const report: ProjectReport = {
+      projectId: this.data.id,
+      title: this.newReport.title,
+      content: this.newReport.content,
+      reportType: this.newReport.reportType
+    };
+
+    this.reportService.createReport(report).subscribe({
+      next: () => {
+        this.loadReports();
+        this.showAddReportForm = false;
+      },
+      error: (error) => {
+        console.error('Error creating report:', error);
+      }
+    });
+  }
+
+  getReportTypeText(type: string): string {
+    switch (type) {
+      case 'Progress': return 'Haladási';
+      case 'Issue': return 'Probléma';
+      case 'Milestone': return 'Mérföldkő';
+      default: return type;
+    }
+  }
+
+  isOwner(user: User | ProjectUser): boolean {
+    return user.id === this.data.userId || user.id === this.data.createdById;
+  }
+
+  getDocumentIcon(fileName: string): string {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+
+    if (['pdf'].includes(ext)) return 'picture_as_pdf';
+    if (['doc', 'docx'].includes(ext)) return 'description';
+    if (['xls', 'xlsx', 'csv'].includes(ext)) return 'table_chart';
+    if (['ppt', 'pptx'].includes(ext)) return 'slideshow';
+    if (['txt', 'rtf'].includes(ext)) return 'text_snippet';
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext)) return 'image';
+
+    return 'insert_drive_file';
+  }
+
+  getDocumentType(fileName: string): string {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+
+    if (['pdf'].includes(ext)) return 'PDF dokumentum';
+    if (['doc', 'docx'].includes(ext)) return 'Word dokumentum';
+    if (['xls', 'xlsx'].includes(ext)) return 'Excel táblázat';
+    if (['csv'].includes(ext)) return 'CSV fájl';
+    if (['ppt', 'pptx'].includes(ext)) return 'PowerPoint prezentáció';
+    if (['txt'].includes(ext)) return 'Szöveges dokumentum';
+    if (['rtf'].includes(ext)) return 'Rich Text dokumentum';
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(ext)) return 'Kép';
+
+    return ext.toUpperCase() + ' fájl';
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
   toggleStatus(): void {
+    if (!this.canToggleStatus()) {
+      return;
+    }
+
+    // Állítsuk be a projekt új állapotát
     this.data.isActive = !this.data.isActive;
-    this.dialogRef.close({ action: 'toggle', project: this.data });
+
+    // Zárjuk be a dialógust a frissített projekttel
+    this.dialogRef.close({
+      action: 'toggle',
+      project: this.data
+    });
   }
 
   saveChanges(): void {
-    try {
-      console.log('Before combining dates:');
-      console.log('Start Date:', this.startDate);
-      console.log('Start Time:', this.startTime);
-      console.log('End Date:', this.endDate);
-      console.log('End Time:', this.endTime);
+    if (!this.canEdit) {
+      return;
+    }
 
+    try {
       const combinedStartDateTime = this.createExactDateTime(this.startDate, this.startTime);
       const combinedEndDateTime = this.createExactDateTime(this.endDate, this.endTime);
-
-      console.log('After combining dates:');
-      console.log('Combined Start DateTime:', combinedStartDateTime);
-      console.log('Combined End DateTime:', combinedEndDateTime);
 
       this.data.startDate = combinedStartDateTime;
       this.data.plannedEndDate = combinedEndDateTime;
 
-      console.log('Saving changes with combined dates:', this.data);
+      // Biztosítjuk, hogy a hozzárendelt felhasználók tömb létezik
+      if (!this.data.assignedUsers) {
+        this.data.assignedUsers = [];
+      }
+
+      // Biztosítjuk, hogy a létrehozó benne van a hozzárendelt felhasználók között
+      if (this.currentUserId && !this.data.assignedUsers.some(u => u.id === this.currentUserId)) {
+        const currentUser = this.data.assignedUsers.find(u => u.id === this.currentUserId);
+        if (currentUser) {
+          this.data.assignedUsers.push(currentUser);
+        }
+      }
+
       this.dialogRef.close({ action: 'save', project: this.data });
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -707,8 +1022,6 @@ export class ProjectDetailsDialogComponent implements OnInit {
     const [hours, minutes] = timeString.split(':').map(Number);
 
     const result = new Date(year, month, day, hours, minutes, 0, 0);
-
-    console.log(`Created exact datetime: ${result.toLocaleString()} from ${date.toDateString()} and ${timeString}`);
     return result;
   }
 

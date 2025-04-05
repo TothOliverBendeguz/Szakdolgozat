@@ -13,7 +13,7 @@ import { AuthService } from '../auth.service';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
 import { FormsModule } from '@angular/forms';
-
+import { UserProfileService, UserSettings } from '../services/user-profile.service';
 
 @Component({
   selector: 'app-projects',
@@ -34,7 +34,7 @@ import { FormsModule } from '@angular/forms';
       <div class="header">
         <h2>Projektek</h2>
         <div class="header-controls">
-          <mat-button-toggle-group [(ngModel)]="currentView">
+          <mat-button-toggle-group [(ngModel)]="currentView" (change)="saveViewPreference()">
             <mat-button-toggle value="card">
               <mat-icon>grid_view</mat-icon>
             </mat-button-toggle>
@@ -85,12 +85,11 @@ import { FormsModule } from '@angular/forms';
           
           <mat-card-actions *ngIf="canModifyProject(project)">
             <button mat-button color="primary" 
-                    *ngIf="authService.isAdmin()"
+                    *ngIf="canToggleStatus(project)"
                     (click)="toggleProjectStatus(project)">
               {{project.isActive ? 'Deaktiválás' : 'Aktiválás'}}
             </button>
             <button mat-button color="warn" 
-                    *ngIf="authService.isAdmin()"
                     (click)="deleteProject(project)">
               Törlés
             </button>
@@ -138,12 +137,12 @@ import { FormsModule } from '@angular/forms';
                 <mat-icon>visibility</mat-icon>
               </button>
               <button mat-icon-button color="primary" 
-                      *ngIf="authService.isAdmin()"
+                      *ngIf="canToggleStatus(project)"
                       (click)="toggleProjectStatus(project)">
                 <mat-icon>{{project.isActive ? 'pause' : 'play_arrow'}}</mat-icon>
               </button>
               <button mat-icon-button color="warn" 
-                      *ngIf="authService.isAdmin()"
+                      *ngIf="canModifyProject(project)"
                       (click)="deleteProject(project)">
                 <mat-icon>delete</mat-icon>
               </button>
@@ -221,19 +220,51 @@ export class ProjectsComponent implements OnInit {
   projects: Project[] = [];
   currentView: 'card' | 'table' = 'card';
   displayedColumns: string[] = ['name', 'projectManager', 'startDate', 'plannedEndDate', 'status', 'actions'];
-
+  userSettings: UserSettings | null = null;
 
   constructor(
     private dialog: MatDialog,
     private projectService: ProjectService,
     public authService: AuthService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private userProfileService: UserProfileService
   ) { }
 
   ngOnInit(): void {
+    this.loadUserSettings();
     this.loadProjects();
   }
 
+  loadUserSettings(): void {
+    this.userProfileService.getUserSettings().subscribe({
+      next: (settings) => {
+        this.userSettings = settings;
+        // Apply the saved view preference
+        if (settings.defaultProjectView === 'card' || settings.defaultProjectView === 'table') {
+          this.currentView = settings.defaultProjectView;
+        }
+        console.log('Loaded project view preference:', this.currentView);
+      },
+      error: (error) => {
+        console.error('Error loading user settings:', error);
+      }
+    });
+  }
+
+  saveViewPreference(): void {
+    if (!this.userSettings) return;
+
+    this.userSettings.defaultProjectView = this.currentView;
+
+    this.userProfileService.updateUserSettings(this.userSettings).subscribe({
+      next: () => {
+        console.log('Saved project view preference:', this.currentView);
+      },
+      error: (error) => {
+        console.error('Error saving project view preference:', error);
+      }
+    });
+  }
 
   getAssignedUsersString(project: Project): string {
     if (!project.assignedUsers || project.assignedUsers.length === 0) {
@@ -267,7 +298,23 @@ export class ProjectsComponent implements OnInit {
 
   canModifyProject(project: Project): boolean {
     if (this.authService.isAdmin()) return true;
-    if (this.authService.isDeveloper() && project.userId === this.authService.getCurrentUserId()) return true;
+
+    const currentUserId = this.authService.getCurrentUserId();
+    if (this.authService.isDeveloper() &&
+      (project.userId === currentUserId || project.createdById === currentUserId))
+      return true;
+
+    return false;
+  }
+
+  canToggleStatus(project: Project): boolean {
+    if (this.authService.isAdmin()) return true;
+
+    const currentUserId = this.authService.getCurrentUserId();
+    if (this.authService.isDeveloper() &&
+      (project.userId === currentUserId || project.createdById === currentUserId))
+      return true;
+
     return false;
   }
 
@@ -298,7 +345,7 @@ export class ProjectsComponent implements OnInit {
 
   openProjectDetails(project: Project): void {
     const dialogRef = this.dialog.open(ProjectDetailsDialogComponent, {
-      width: '600px',
+      width: '700px',
       data: {
         ...project,
         canModify: this.canModifyProject(project),
@@ -309,8 +356,14 @@ export class ProjectsComponent implements OnInit {
     dialogRef.afterClosed().subscribe(result => {
       if (!result) return;
 
-      if (result.action === 'toggle' && this.authService.isAdmin()) {
-        this.projectService.toggleProjectStatus(result.project.id).subscribe({
+      console.log('Dialog result:', result);
+
+      if (result.action === 'toggle' &&
+        (this.authService.isAdmin() || this.canModifyProject(project))) {
+        console.log('Toggling project status to:', result.project.isActive);
+
+        // Frissítsük a projektet a státusz változtatással
+        this.projectService.updateProject(result.project).subscribe({
           next: () => {
             this.loadProjects();
             this.snackBar.open('Project status updated', 'Close', { duration: 3000 });
@@ -336,7 +389,10 @@ export class ProjectsComponent implements OnInit {
   }
 
   toggleProjectStatus(project: Project): void {
-    if (!this.authService.isAdmin()) return;
+    if (!this.canToggleStatus(project)) {
+      this.snackBar.open('Nincs jogosultságod módosítani a projekt státuszát', 'OK', { duration: 3000 });
+      return;
+    }
 
     if (project.id) {
       this.projectService.toggleProjectStatus(project.id).subscribe({
@@ -353,17 +409,25 @@ export class ProjectsComponent implements OnInit {
   }
 
   deleteProject(project: Project): void {
-    if (!this.authService.isAdmin()) return;
+    const currentUserId = this.authService.getCurrentUserId();
+    const canDelete = this.authService.isAdmin() ||
+      (this.authService.isDeveloper() &&
+        (project.userId === currentUserId || project.createdById === currentUserId));
 
-    if (project.id && confirm('Are you sure you want to delete this project?')) {
-      this.projectService.deleteProject(project.id).subscribe({
+    if (!canDelete) {
+      this.snackBar.open('Nincs jogosultságod törölni ezt a projektet', 'OK', { duration: 3000 });
+      return;
+    }
+
+    if (confirm('Biztosan törölni szeretnéd ezt a projektet?')) {
+      this.projectService.deleteProject(project.id!).subscribe({
         next: () => {
+          this.snackBar.open('Projekt sikeresen törölve', 'Close', { duration: 3000 });
           this.loadProjects();
-          this.snackBar.open('Project deleted successfully', 'Close', { duration: 3000 });
         },
         error: (error: Error) => {
           console.error('Error deleting project:', error);
-          this.snackBar.open('Error deleting project', 'Close', { duration: 3000 });
+          this.snackBar.open('Hiba történt a projekt törlésekor: ' + error.message, 'Close', { duration: 3000 });
         }
       });
     }

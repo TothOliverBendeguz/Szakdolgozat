@@ -316,6 +316,42 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "SzakDolgozat.Api.Controllers.ProjectController",
+    "Method": "GetDeletedProjects",
+    "RelativePath": "api/Project/deleted",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SzakDolgozat.Api.DTOs.ProjectResponseDto, SzakDolgozat.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.ProjectController",
+    "Method": "PurgeProject",
+    "RelativePath": "api/Project/purge/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "SzakDolgozat.Api.Controllers.ProjectDocumentController",
     "Method": "DeleteDocument",
     "RelativePath": "api/ProjectDocument/{id}",
@@ -697,6 +733,48 @@
     ]
   },
   {
+    "ContainingType": "SzakDolgozat.Api.Controllers.TaskController",
+    "Method": "GetDeletedProjectTasks",
+    "RelativePath": "api/Task/project/{projectId}/deleted",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "projectId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SzakDolgozat.Api.DTOs.TaskResponseDto, SzakDolgozat.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.TaskController",
+    "Method": "PurgeTask",
+    "RelativePath": "api/Task/purge/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "SzakDolgozat.Api.Controllers.UserController",
     "Method": "GetUsers",
     "RelativePath": "api/User",
@@ -814,5 +892,166 @@
         "StatusCode": 200
       }
     ]
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.UserActivityLogController",
+    "Method": "CreateActivityLog",
+    "RelativePath": "api/UserActivityLog",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "logDto",
+        "Type": "SzakDolgozat.Api.DTOs.CreateActivityLogDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "SzakDolgozat.Api.DTOs.UserActivityLogDto",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.UserActivityLogController",
+    "Method": "GetAllActivities",
+    "RelativePath": "api/UserActivityLog/all",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "startDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SzakDolgozat.Api.DTOs.UserActivityLogDto, SzakDolgozat.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.UserActivityLogController",
+    "Method": "GetUserActivities",
+    "RelativePath": "api/UserActivityLog/user/{userId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "userId",
+        "Type": "System.String",
+        "IsRequired": true
+      },
+      {
+        "Name": "startDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      },
+      {
+        "Name": "endDate",
+        "Type": "System.DateTime",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "System.Collections.Generic.IEnumerable\u00601[[SzakDolgozat.Api.DTOs.UserActivityLogDto, SzakDolgozat.Api, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.UserProfileController",
+    "Method": "GetUserProfile",
+    "RelativePath": "api/UserProfile",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.UserProfileController",
+    "Method": "UpdateUserProfile",
+    "RelativePath": "api/UserProfile",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "SzakDolgozat.Api.Controllers.UpdateProfileDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.UserProfileController",
+    "Method": "ChangePassword",
+    "RelativePath": "api/UserProfile/change-password",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "model",
+        "Type": "SzakDolgozat.Api.Controllers.ChangePasswordDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.UserProfileController",
+    "Method": "GetUserSettings",
+    "RelativePath": "api/UserProfile/settings",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "SzakDolgozat.Api.Controllers.UserProfileController",
+    "Method": "UpdateUserSettings",
+    "RelativePath": "api/UserProfile/settings",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "settings",
+        "Type": "SzakDolgozat.Api.Models.UserSettings",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
   }
 ]

@@ -1,5 +1,6 @@
+// navbar.component.ts
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../auth.service';
 import { MatToolbarModule } from '@angular/material/toolbar';
@@ -20,53 +21,70 @@ import { NotificationDropdownComponent } from '../notifications/notification-dro
   ],
   template: `
     <mat-toolbar color="primary" *ngIf="authService.isLoggedIn()">
-      <span>P r e s s</span>
+      <span class="site-name">&lt;P r e s s&gt;</span>
       <span class="spacer"></span>
+      
       <button mat-button routerLink="/projects">
         <mat-icon>work</mat-icon>
-        Projects
-      </button>
-      <button mat-button routerLink="/calendar">
-        <mat-icon>calendar_today</mat-icon>
-        Calendar
-      </button>
-      <button mat-button routerLink="/graph">
-        <mat-icon>share</mat-icon>
-        Graph View
+        Projektek
       </button>
       
-      <!-- Értesítési komponens -->
-      <app-notification-dropdown></app-notification-dropdown>
+      <button mat-button routerLink="/graph">
+        <mat-icon>bubble_chart</mat-icon>
+        Gráf nézet
+      </button>
+      
+      <button mat-button routerLink="/calendar">
+        <mat-icon>calendar_today</mat-icon>
+        Naptár
+      </button>
       
       <button mat-button routerLink="/settings">
         <mat-icon>settings</mat-icon>
-        Settings
+        Beállítások
       </button>
+      
       <button mat-button (click)="logout()">
         <mat-icon>exit_to_app</mat-icon>
-        Logout
+        Kijelentkezés
       </button>
+      
+      <div class="notification-container">
+        <app-notification-dropdown></app-notification-dropdown>
+      </div>
     </mat-toolbar>
   `,
   styles: [`
-    .spacer {
-      flex: 1 1 auto;
-    }
-    
-    mat-toolbar {
+    .mat-toolbar {
+      background-color: #1976D2; /* Kevésbé élénk kék */
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
       z-index: 1000;
     }
+    
+    .site-name {
+      font-family: 'Fira Code', monospace;
+      font-size: 20px;
+      font-weight: 500;
+      letter-spacing: 2px;
+    }
+    
+    .spacer {
+      flex: 1 1 auto;
+    }
 
     button {
-      margin: 0 8px;
+      margin: 0 4px;
     }
 
     mat-icon {
       margin-right: 4px;
+    }
+    
+    .notification-container {
+      margin-left: 8px;
     }
   `]
 })

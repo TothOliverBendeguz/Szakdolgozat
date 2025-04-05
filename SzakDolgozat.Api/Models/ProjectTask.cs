@@ -14,18 +14,18 @@ namespace SzakDolgozat.Api.Models
         public int ProjectId { get; set; }
 
         [Required]
-        [StringLength(200)]
+        [StringLength(100)]
         public string Title { get; set; }
 
         public string Description { get; set; }
 
         [Required]
         [StringLength(50)]
-        public string Status { get; set; } // "New", "InProgress", "Completed", "OnHold"
+        public string Status { get; set; }
 
         [Required]
         [StringLength(50)]
-        public string Priority { get; set; } // "Low", "Medium", "High", "Critical"
+        public string Priority { get; set; }
 
         [Required]
         public DateTime StartDate { get; set; }
@@ -39,11 +39,15 @@ namespace SzakDolgozat.Api.Models
 
         public DateTime CreatedAt { get; set; }
 
+        public bool IsDeleted { get; set; } = false;
+
+        public DateTime? DeletedAt { get; set; }
+
         [ForeignKey("ProjectId")]
-        public Project Project { get; set; }
+        public virtual Project Project { get; set; }
 
         [ForeignKey("CreatedById")]
-        public User CreatedBy { get; set; }
+        public virtual User CreatedBy { get; set; }
 
         public virtual ICollection<TaskAssignment> TaskAssignments { get; set; } = new List<TaskAssignment>();
     }

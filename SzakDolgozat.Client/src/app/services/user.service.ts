@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, throwError, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { UserRole } from '../auth.service';
+import { AuthService } from '../auth.service';
 
 export interface User {
   id: string;
@@ -19,7 +20,10 @@ export interface User {
 export class UserService {
   private apiUrl = 'https://localhost:7294/api/user';
 
-  constructor(private http: HttpClient) { }
+  constructor(
+    private http: HttpClient,
+    private authService: AuthService
+  ) { }
 
   getUsers(): Observable<User[]> {
     const headers = new HttpHeaders().set('Content-Type', 'application/json');
@@ -56,5 +60,31 @@ export class UserService {
 
   deleteUser(userId: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${userId}`);
+  }
+
+  /**
+   * Lekéri a jelenlegi felhasználó adatait
+   */
+  getCurrentUser(): Observable<User> {
+    return this.http.get<User>(`${this.apiUrl}/current`).pipe(
+      tap(user => console.log('Fetched current user:', user)),
+      catchError(error => {
+        console.error('Error fetching current user:', error);
+
+        // Hiba esetén visszaadjuk a bejelentkezett felhasználó adatait
+        const currentUserId = this.authService.getCurrentUserId();
+        if (currentUserId) {
+          const user: User = {
+            id: currentUserId,
+            userName: this.authService.getCurrentUserEmail() || 'Current User',
+            email: this.authService.getCurrentUserEmail() || '',
+            role: this.authService.getCurrentUserRole()
+          };
+          return of(user);
+        }
+
+        return throwError(() => error);
+      })
+    );
   }
 }

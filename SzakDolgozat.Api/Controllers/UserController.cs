@@ -121,17 +121,36 @@ namespace SzakDolgozat.Api.Controllers
             }
         }
 
+
         [HttpGet("current")]
+        [AllowAnonymous] 
         public async Task<ActionResult<object>> GetCurrentUser()
         {
             try
             {
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Ok(new
+                    {
+                        Id = "",
+                        UserName = "Guest",
+                        Email = "",
+                        Role = 3 
+                    });
+                }
+
                 var user = await _userManager.FindByIdAsync(userId);
 
                 if (user == null)
                 {
-                    return NotFound();
+                    return Ok(new
+                    {
+                        Id = userId,
+                        UserName = "Unknown",
+                        Email = "",
+                        Role = 3 
+                    });
                 }
 
                 return Ok(new
@@ -150,7 +169,6 @@ namespace SzakDolgozat.Api.Controllers
         }
 
 
-
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
@@ -162,7 +180,6 @@ namespace SzakDolgozat.Api.Controllers
                     return NotFound();
                 }
 
-                // Ellenőrizzük, hogy nem az utolsó admin-e
                 if (user.Role == (int)UserRole.Admin)
                 {
                     var adminCount = await _userManager.Users
@@ -188,7 +205,6 @@ namespace SzakDolgozat.Api.Controllers
                 return StatusCode(500, new { message = "Internal server error" });
             }
         }
-
 
 
 

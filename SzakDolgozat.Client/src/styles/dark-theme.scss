@@ -1,0 +1,298 @@
+// src/styles/dark-theme.scss (folytatás)
+// Progress indicators
+.mat-progress-spinner circle, .mat-spinner circle {
+  stroke: $dark-primary-color;
+}
+
+.mat-progress-bar-buffer {
+  background-color: rgba(92, 107, 192, 0.3);
+}
+
+.mat-progress-bar-fill::after {
+  background-color: $dark-primary-color;
+}
+
+// Dialog
+.mat-dialog-container {
+  background-color: $dark-card-bg;
+  color: $dark-text-color;
+}
+
+// Snackbar
+.mat-snack-bar-container {
+  background-color: $dark-secondary-bg;
+  color: $dark-text-color;
+}
+
+// Mat Drawer and Sidenav
+.mat-drawer, .mat-sidenav {
+  background-color: $dark-secondary-bg;
+  color: $dark-text-color;
+}
+
+.mat-drawer-container, .mat-sidenav-container {
+  background-color: $dark-primary-bg;
+  color: $dark-text-color;
+}
+
+// Button toggles
+.mat-button-toggle-standalone,
+.mat-button-toggle-group {
+  border-color: $dark-border-color;
+
+  .mat-button-toggle {
+    color: $dark-text-color;
+    background-color: $dark-secondary-bg;
+
+    &.mat-button-toggle-checked {
+      background-color: $dark-primary-color;
+      color: white;
+    }
+  }
+}
+
+// Accordions
+.mat-accordion {
+  .mat-expansion-panel {
+    background-color: $dark-card-bg;
+
+    .mat-expansion-panel-header {
+      background-color: $dark-secondary-bg;
+
+      .mat-expansion-panel-header-title,
+      .mat-expansion-panel-header-description {
+        color: $dark-text-color;
+      }
+    }
+
+    .mat-expansion-panel-body {
+      background-color: $dark-card-bg;
+      color: $dark-text-color;
+    }
+  }
+}
+
+// Projekt lista
+.projects-list {
+  .project-card {
+    background-color: $dark-card-bg;
+    border-color: $dark-border-color;
+    color: $dark-text-color;
+
+    .mat-card-title, .mat-card-subtitle {
+      color: $dark-text-color;
+    }
+
+    .mat-card-content {
+      color: $dark-text-color;
+    }
+
+    .mat-card-actions {
+      button {
+        color: $dark-text-color;
+      }
+    }
+  }
+}
+
+// Login/Register form specific
+.login-container, .register-container {
+  background-color: $dark-primary-bg !important;
+
+  mat-card {
+    background-color: $dark-card-bg !important;
+    color: $dark-text-color !important;
+
+    mat-card-header mat-card-title {
+      color: $dark-text-color !important;
+    }
+
+    mat-form-field {
+      color: $dark-text-color !important;
+
+      .mat-input-element {
+        color: $dark-text-color !important;
+      }
+
+      .mat-form-field-label {
+        color: $dark-text-secondary !important;
+      }
+    }
+
+    button {
+      background-color: $dark-primary-color !important;
+      color: white !important;
+    }
+
+    a {
+      color: $dark-primary-color !important;
+    }
+  }
+}
+
+// Naptár komponens specifikus
+.calendar-container {
+  background-color: $dark-primary-bg;
+  color: $dark-text-color;
+
+  .filter-panel {
+    mat-card {
+      background-color: $dark-card-bg;
+      color: $dark-text-color;
+    }
+  }
+
+  .calendar-main {
+    mat-card {
+      background-color: $dark-card-bg;
+      color: $dark-text-color;
+    }
+  }
+
+  .mat-button-toggle-group {
+    background-color: $dark-secondary-bg;
+
+    .mat-button-toggle {
+      color: $dark-text-color;
+      background-color: $dark-secondary-bg;
+
+      &.mat-button-toggle-checked {
+        background-color: $dark-primary-color;
+        color: white;
+      }
+    }
+  }
+
+  .selector {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+}
+
+// Beállítások oldal specifikus
+.settings-container {
+  background-color: $dark-primary-bg;
+
+  h2, h3, h4 {
+    color: $dark-text-color;
+  }
+
+  .settings-card {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+
+    .mat-expansion-panel {
+      background-color: $dark-card-bg;
+    }
+  }
+
+  .mat-expansion-panel {
+    background-color: $dark-card-bg;
+
+    .mat-expansion-panel-header {
+      background-color: $dark-secondary-bg;
+    }
+
+    .mat-expansion-panel-content {
+      background-color: $dark-card-bg;
+    }
+  }
+
+  .profile-settings-container, .notification-settings {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+
+  .theme-option {
+    background-color: $dark-secondary-bg;
+    border-color: $dark-border-color;
+    color: $dark-text-color;
+
+    &.selected {
+      border-color: $dark-primary-color;
+      background-color: rgba(92, 107, 192, 0.3);
+    }
+  }
+}
+
+// Grafikus nézet
+.graph-container {
+  background-color: $dark-primary-bg;
+
+  mat-card {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+
+  .network-container, .loading-container {
+    background-color: $dark-secondary-bg;
+    border-color: $dark-border-color;
+  }
+
+  .legend {
+    background-color: $dark-secondary-bg;
+    color: $dark-text-color;
+    border-color: $dark-border-color;
+  }
+
+  .controls-section {
+    background-color: $dark-card-bg;
+  }
+
+  .filter-controls, .zoom-controls {
+    button {
+      color: $dark-text-color;
+      background-color: $dark-secondary-bg;
+    }
+  }
+}
+
+// User management
+.user-management-container {
+  background-color: $dark-card-bg;
+  color: $dark-text-color;
+
+  .filters {
+    mat-form-field {
+      color: $dark-text-color;
+    }
+  }
+
+  table {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+}
+
+// Értesítési komponens
+.notifications-container {
+  background-color: $dark-primary-bg;
+
+  mat-card {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+
+  .mat-tab-group {
+    background-color: $dark-card-bg;
+
+    .mat-tab-header {
+      background-color: $dark-secondary-bg;
+    }
+
+    .mat-tab-body-content {
+      background-color: $dark-card-bg;
+    }
+  }
+
+  .notification-table {
+    background-color: $dark-card-bg;
+    color: $dark-text-color;
+  }
+
+  .no-notifications {
+    background-color: $dark-secondary-bg;
+    color: $dark-text-secondary;
+  }
+}
+}

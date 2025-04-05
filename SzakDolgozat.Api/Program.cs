@@ -25,6 +25,8 @@ builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddScoped<UserActivityLogService>();
+
 builder.Services.Configure<IdentityOptions>(options =>
 {
     options.Password.RequireDigit = true;
@@ -97,6 +99,9 @@ else
 builder.Services.Configure<EmailSettings>(
 builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+builder.Services.AddScoped<UserProfileService>();
+
 
 var app = builder.Build();
 

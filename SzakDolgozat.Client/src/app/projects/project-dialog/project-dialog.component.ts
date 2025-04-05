@@ -89,17 +89,23 @@ import { UserService, User } from '../../services/user.service';
 
         <mat-form-field appearance="fill" class="full-width">
           <mat-label>Assign Users</mat-label>
-          <mat-select [(ngModel)]="project.assignedUsers" name="assignedUsers" multiple>
-            <mat-option *ngFor="let user of availableUsers" [value]="user">
+          <mat-select [(ngModel)]="additionalUsers" name="additionalUsers" multiple>
+            <mat-option *ngFor="let user of filteredAvailableUsers" [value]="user">
               {{user.email}} ({{user.userName}})
             </mat-option>
           </mat-select>
         </mat-form-field>
 
-        <div class="selected-users" *ngIf="project.assignedUsers?.length">
+        <div class="selected-users" *ngIf="hasAssignedUsers()">
           <h4>Selected Users:</h4>
           <mat-chip-listbox>
-            <mat-chip *ngFor="let user of project.assignedUsers" removable (removed)="removeUser(user)">
+            <!-- Aktuális felhasználó nem eltávolítható -->
+            <mat-chip [removable]="false" *ngIf="currentUser">
+              {{currentUser.email}} (Te)
+            </mat-chip>
+            
+            <!-- Többi felhasználó eltávolítható -->
+            <mat-chip *ngFor="let user of additionalUsers" removable (removed)="removeUser(user)">
               {{user.email}}
               <mat-icon matChipRemove>cancel</mat-icon>
             </mat-chip>
@@ -154,17 +160,19 @@ export class ProjectDialogComponent implements OnInit {
     plannedEndDate: new Date(),
     description: '',
     repository: '',
-    isActive: true,
-    assignedUsers: [] as User[]
+    isActive: true
   };
 
-  // Külön kezeljük a dátum és idő komponenseket
+
   startDate: Date = new Date();
   startTime: string = this.formatTime(new Date());
   endDate: Date = new Date();
   endTime: string = this.formatTime(new Date());
 
   availableUsers: User[] = [];
+  filteredAvailableUsers: User[] = [];
+  additionalUsers: User[] = []; 
+  currentUser: User | null = null; 
 
   constructor(
     public dialogRef: MatDialogRef<ProjectDialogComponent>,
@@ -174,7 +182,20 @@ export class ProjectDialogComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.loadCurrentUser();
     this.loadUsers();
+  }
+
+  loadCurrentUser() {
+    const currentUserId = this.authService.getCurrentUserId();
+    if (currentUserId) {
+      this.currentUser = {
+        id: currentUserId,
+        userName: this.authService.getCurrentUserEmail() || 'Current User',
+        email: this.authService.getCurrentUserEmail() || '',
+        role: this.authService.getCurrentUserRole()
+      };
+    }
   }
 
   formatTime(date: Date): string {
@@ -182,22 +203,53 @@ export class ProjectDialogComponent implements OnInit {
   }
 
   loadUsers() {
-    this.userService.getUsers().subscribe({
-      next: (users) => {
-        this.availableUsers = users;
-      },
-      error: (error) => {
-        console.error('Error loading users:', error);
-        this.snackBar.open('Failed to load users', 'Close', { duration: 3000 });
-      }
-    });
+    if (this.authService.isAdmin()) {
+      this.userService.getUsers().subscribe({
+        next: (users) => {
+          this.availableUsers = users;
+          this.filterAvailableUsers();
+        },
+        error: (error) => {
+          console.error('Error loading users:', error);
+          this.snackBar.open('Failed to load users', 'Close', { duration: 3000 });
+          this.availableUsers = [];
+          this.filterAvailableUsers();
+        }
+      });
+    } else {
+      this.userService.getCurrentUser().subscribe({
+        next: (currentUser) => {
+          this.availableUsers = [];
+          this.filterAvailableUsers();
+        },
+        error: (error) => {
+          console.error('Error loading current user:', error);
+          this.availableUsers = [];
+          this.filterAvailableUsers();
+        }
+      });
+    }
+  }
+
+
+  filterAvailableUsers() {
+    const currentUserId = this.authService.getCurrentUserId();
+    if (currentUserId) {
+      this.filteredAvailableUsers = this.availableUsers.filter(user => user.id !== currentUserId);
+    } else {
+      this.filteredAvailableUsers = [...this.availableUsers];
+    }
   }
 
   removeUser(user: User) {
-    const index = this.project.assignedUsers.indexOf(user);
+    const index = this.additionalUsers.indexOf(user);
     if (index >= 0) {
-      this.project.assignedUsers.splice(index, 1);
+      this.additionalUsers.splice(index, 1);
     }
+  }
+
+  hasAssignedUsers(): boolean {
+    return (this.currentUser !== null) || (this.additionalUsers.length > 0);
   }
 
   onSubmit(): void {
@@ -210,6 +262,12 @@ export class ProjectDialogComponent implements OnInit {
     const combinedStartDateTime = this.combineDateAndTime(this.startDate, this.startTime);
     const combinedEndDateTime = this.combineDateAndTime(this.endDate, this.endTime);
 
+    let allUsers = [...this.additionalUsers];
+
+    if (this.currentUser && !allUsers.some(u => u.id === this.currentUser?.id)) {
+      allUsers.push(this.currentUser);
+    }
+
     const projectData = {
       name: this.project.name,
       projectManager: this.project.projectManager,
@@ -217,23 +275,22 @@ export class ProjectDialogComponent implements OnInit {
       plannedEndDate: combinedEndDateTime,
       description: this.project.description,
       repository: this.project.repository,
-      assignedUsers: this.project.assignedUsers.map(user => user.id),
-      createdById: userId
+      assignedUsers: allUsers,  
+      userId: userId,           
+      createdById: userId       
     };
 
+    console.log('Sending project data:', projectData);
     this.dialogRef.close(projectData);
   }
 
   combineDateAndTime(date: Date, timeString: string): Date {
-    // Feldolgozzuk a dátum és idő komponenseket
     const year = date.getFullYear();
     const month = date.getMonth();
     const day = date.getDate();
 
-    // Feldolgozzuk az idő komponenseket
     const [hours, minutes] = timeString.split(':').map(Number);
 
-    // Létrehozunk egy új dátumot a pontos időponttal
     const result = new Date(year, month, day, hours, minutes, 0, 0);
 
     console.log(`Created exact datetime: ${result.toLocaleString()} from ${date.toDateString()} and ${timeString}`);
