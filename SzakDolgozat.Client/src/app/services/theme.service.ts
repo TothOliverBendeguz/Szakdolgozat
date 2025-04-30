@@ -1,6 +1,7 @@
 import { Injectable, Renderer2, RendererFactory2 } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { UserProfileService } from './user-profile.service';
+import { AuthService } from '../auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -11,17 +12,36 @@ export class ThemeService {
   darkMode$ = this.darkMode.asObservable();
 
   constructor(
-    rendererFactory: RendererFactory2
+    rendererFactory: RendererFactory2,
+    private userProfileService: UserProfileService,
+    private authService: AuthService
   ) {
     this.renderer = rendererFactory.createRenderer(null, null);
-
-    // Alapértelmezetten próbáljuk meg betölteni a témát a localStorage-ból
-    this.loadThemeFromLocalStorage();
+    this.loadTheme();
   }
 
-  private loadThemeFromLocalStorage(): void {
+  private loadTheme(): void {
+    if (this.authService.isLoggedIn()) {
+      this.userProfileService.getUserSettings().subscribe({
+        next: (settings) => {
+          const isDarkMode = settings.uiTheme === 'dark';
+          this.darkMode.next(isDarkMode);
+          this.applyTheme(isDarkMode);
+        },
+        error: () => {
+          this.loadFallbackTheme();
+        }
+      });
+    } else {
+      this.loadFallbackTheme();
+    }
+  }
+
+  private loadFallbackTheme(): void {
     const savedTheme = localStorage.getItem('theme');
-    const isDarkMode = savedTheme === 'dark';
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
+
     this.darkMode.next(isDarkMode);
     this.applyTheme(isDarkMode);
   }
@@ -30,9 +50,20 @@ export class ThemeService {
     const newDarkMode = !this.darkMode.value;
     this.darkMode.next(newDarkMode);
     this.applyTheme(newDarkMode);
+    this.saveThemePreference(newDarkMode);
+  }
 
-    // Mentés localStorage-ba
-    localStorage.setItem('theme', newDarkMode ? 'dark' : 'light');
+  private saveThemePreference(isDarkMode: boolean): void {
+    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+
+    if (this.authService.isLoggedIn()) {
+      this.userProfileService.getUserSettings().subscribe({
+        next: (settings) => {
+          settings.uiTheme = isDarkMode ? 'dark' : 'light';
+          this.userProfileService.updateUserSettings(settings).subscribe();
+        }
+      });
+    }
   }
 
   applyTheme(isDarkMode: boolean): void {
@@ -41,8 +72,5 @@ export class ThemeService {
     } else {
       this.renderer.removeClass(document.body, 'dark-theme');
     }
-
-    // Mentés localStorage-ba
-    localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
   }
 }

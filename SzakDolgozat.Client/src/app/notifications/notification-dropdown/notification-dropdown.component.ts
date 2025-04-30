@@ -189,7 +189,6 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
     this.loadNotifications();
     this.loadUnreadCount();
 
-    // Frissítsük az értesítéseket és a számláló minden 60 másodpercben
     this.refreshSubscription = interval(60000).subscribe(() => {
       this.loadUnreadCount();
       this.loadNotifications();
@@ -243,15 +242,12 @@ export class NotificationDropdownComponent implements OnInit, OnDestroy {
   }
 
   onNotificationClick(notification: Notification): void {
-    // Jelöljük olvasottnak, ha még nem az
     if (!notification.isRead) {
       this.markAsRead(notification);
     }
 
-    // Ha projekthez kapcsolódik, navigáljunk a projekt részletekhez
     if (notification.projectId) {
-      // A navigációt a notifikációs oldal fogja kezelni
-      // A routerLink a megadott navigációs útvonalra irányítja a felhasználót
+
     }
   }
 }

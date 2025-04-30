@@ -19,6 +19,7 @@ import { ProjectDetailsDialogComponent } from '../projects/project-details-dialo
 import { TaskDetailsDialogComponent } from '../tasks/task-details-dialog.component';
 import { forkJoin, Observable, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import huLocale from '@fullcalendar/core/locales/hu';
 
 interface CalendarEvent extends EventInput {
   title: string;
@@ -34,7 +35,7 @@ interface CalendarEvent extends EventInput {
     userEmail?: string;
     userName?: string;
     isActivityLog?: boolean;
-    isDeleted?: boolean;  
+    isDeleted?: boolean;
   };
 }
 
@@ -63,18 +64,17 @@ interface CalendarEvent extends EventInput {
               <mat-card-title>Szűrők</mat-card-title>
             </mat-card-header>
             <mat-card-content>
-              <!-- Nézet választó -->
+              <!-- Nézet választó - Csak 2 opció -->
               <mat-button-toggle-group
                 [(ngModel)]="selectedView"
                 (change)="onViewChange()"
                 class="view-toggle">
                 <mat-button-toggle value="all">Összes</mat-button-toggle>
                 <mat-button-toggle value="my">Saját</mat-button-toggle>
-                <mat-button-toggle value="activities" *ngIf="authService.isAdmin()">Felhasználók</mat-button-toggle>
               </mat-button-toggle-group>
 
-              <!-- Megjelenítési típus választó - csak ha nem admin tevékenység nézetben vagyunk -->
-              <mat-form-field class="selector" *ngIf="!(selectedView === 'activities' && authService.isAdmin())">
+              <!-- Megjelenítési típus választó -->
+              <mat-form-field class="selector">
                 <mat-label>Megjelenítés típusa</mat-label>
                 <mat-select [(ngModel)]="selectedDisplayType" (selectionChange)="filterEvents()">
                   <mat-option value="all">Minden típus</mat-option>
@@ -83,8 +83,8 @@ interface CalendarEvent extends EventInput {
                 </mat-select>
               </mat-form-field>
 
-              <!-- Projekt választó - csak ha nem admin tevékenység nézetben vagyunk -->
-              <mat-form-field class="selector" *ngIf="!(selectedView === 'activities' && authService.isAdmin())">
+              <!-- Projekt választó -->
+              <mat-form-field class="selector">
                 <mat-label>Projekt szűrő</mat-label>
                 <mat-select [(ngModel)]="selectedProjectId" (selectionChange)="filterEvents()">
                   <mat-option [value]="null">Összes projekt</mat-option>
@@ -94,16 +94,16 @@ interface CalendarEvent extends EventInput {
                 </mat-select>
               </mat-form-field>
 
-              <!-- Felhasználó választó (csak adminoknak) tevékenység nézetben -->
-            <mat-form-field class="selector" *ngIf="authService.isAdmin() && (selectedView === 'activities')">
-              <mat-label>Felhasználó szűrő</mat-label>
-              <mat-select [(ngModel)]="selectedUserId" (selectionChange)="loadActivitiesForUser()">
-                <mat-option [value]="null">Összes felhasználó</mat-option>
-                <mat-option *ngFor="let user of users" [value]="user.id">
-                  {{user.userName}} ({{user.email}})
-                </mat-option>
-              </mat-select>
-            </mat-form-field>
+              <!-- Felhasználó szűrő (csak adminoknak) -->
+              <mat-form-field class="selector" *ngIf="authService.isAdmin()">
+                <mat-label>Felhasználó szűrő</mat-label>
+                <mat-select [(ngModel)]="selectedUserId" (selectionChange)="loadActivitiesForUser()">
+                  <mat-option [value]="null">Összes felhasználó</mat-option>
+                  <mat-option *ngFor="let user of users" [value]="user.id">
+                    {{user.userName}} ({{user.email}})
+                  </mat-option>
+                </mat-select>
+              </mat-form-field>
 
               <!-- Naptár nézet választó -->
               <mat-form-field class="selector">
@@ -198,6 +198,13 @@ export class CalendarComponent implements OnInit {
       center: 'title',
       right: 'dayGridMonth,dayGridWeek'
     },
+    buttonText: {
+      today: 'Ma',
+      month: 'Hónap',
+      week: 'Hét'
+    },
+    locale: 'hu',
+    firstDay: 1,
     events: [],
     eventDisplay: 'block',
     eventTimeFormat: {
@@ -205,6 +212,8 @@ export class CalendarComponent implements OnInit {
       minute: '2-digit',
       hour12: false
     },
+    dayHeaderFormat: { weekday: 'short', day: 'numeric' },
+    titleFormat: { year: 'numeric', month: 'long' },
     eventContent: (arg) => {
       let titleText = arg.event.title;
 
@@ -216,7 +225,7 @@ export class CalendarComponent implements OnInit {
 
       return {
         html: `<div class="event-content">${titleText}</div>`
-      };
+      }
     },
     eventClassNames: (arg) => {
       const classNames = [];
@@ -256,14 +265,13 @@ export class CalendarComponent implements OnInit {
   allEvents: CalendarEvent[] = [];
   projectEvents: CalendarEvent[] = [];
   taskEvents: CalendarEvent[] = [];
- 
 
   selectedProjectId: number | null = null;
   selectedUserId: string | null = null;
-  selectedView: 'all' | 'my' | 'activities' = 'all';
+  selectedView: 'all' | 'my' = 'all';
   selectedDisplayType: 'all' | 'projects' | 'tasks' = 'all';
   calendarViewType: string = 'dayGridMonth';
-  showDeleted: boolean = false; 
+  showDeleted: boolean = false;
 
   constructor(
     private projectService: ProjectService,
@@ -275,10 +283,6 @@ export class CalendarComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    if (this.authService.isAdmin() && this.selectedView === 'activities') {
-      this.selectedDisplayType = 'all';
-    }
-
     this.loadUsers();
     this.reloadAllData();
   }
@@ -299,15 +303,10 @@ export class CalendarComponent implements OnInit {
           this.authService.isAdmin()
         );
 
-        if ((this.selectedView === 'activities' && this.authService.isAdmin()) ||
-          (this.showDeleted && this.authService.isAdmin())) {
+        if (this.showDeleted && this.authService.isAdmin()) {
           this.loadDeletedProjects();
         } else {
           this.createProjectEvents();
-        }
-
-        if (this.selectedView === 'activities' && !this.selectedProjectId && this.filteredProjects.length > 0) {
-          this.selectedProjectId = this.filteredProjects[0].id || null;
         }
       },
       error: (error) => {
@@ -373,8 +372,6 @@ export class CalendarComponent implements OnInit {
     }
   }
 
-  
-
   loadTasks() {
     const projectIds = this.getFilteredProjectIds();
 
@@ -398,8 +395,7 @@ export class CalendarComponent implements OnInit {
           );
         }
 
-        if ((this.selectedView === 'activities' && this.authService.isAdmin()) ||
-          (this.showDeleted && this.authService.isAdmin())) {
+        if (this.showDeleted && this.authService.isAdmin()) {
           this.loadDeletedTasks(projectIds);
         } else {
           this.createTaskEvents();
@@ -412,9 +408,6 @@ export class CalendarComponent implements OnInit {
       }
     });
   }
-
-
-
 
   loadDeletedTasks(projectIds: number[]) {
     if (this.authService.isAdmin() && projectIds.length > 0) {
@@ -535,31 +528,22 @@ export class CalendarComponent implements OnInit {
 
   loadActivitiesForUser(): void {
     if (!this.selectedUserId) {
-      console.log("No selected user ID, skipping user activities load");
       this.filterEvents();
       return;
     }
 
     console.log(`Loading activities for user: ${this.selectedUserId}`);
 
-    // Projektek betöltése a felhasználóhoz
     this.projectService.getProjects().subscribe({
       next: (projects: Project[]) => {
-        // Frissítsük a teljes projektek listát
         this.projects = projects;
-        console.log("All projects loaded:", projects);
 
-        // Csak a kiválasztott felhasználóhoz tartozó projektek szűrése
         this.filteredProjects = projects.filter(project => {
           const isOwner = project.userId === this.selectedUserId;
           const isAssigned = project.assignedUsers?.some(user => user.id === this.selectedUserId);
-          console.log(`Project ${project.id} - ${project.name}: Owner: ${isOwner}, Assigned: ${isAssigned}`);
           return isOwner || isAssigned;
         });
 
-        console.log(`Filtered projects for user ${this.selectedUserId}:`, this.filteredProjects);
-
-        // Projekt események létrehozása a szűrt projektek alapján
         this.projectEvents = this.projects.map(project => ({
           title: project.name,
           start: project.startDate,
@@ -574,9 +558,6 @@ export class CalendarComponent implements OnInit {
           }
         }));
 
-        console.log("Project events created:", this.projectEvents);
-
-        // Feladatok betöltése az összes projekthez
         const projectIds = this.projects
           .filter(p => p.id !== undefined)
           .map(p => p.id!);
@@ -588,23 +569,15 @@ export class CalendarComponent implements OnInit {
 
           forkJoin(taskObservables).subscribe({
             next: (results: Task[][]) => {
-              // Összes feladat
               const allTasks = results.flat();
-              console.log("All tasks loaded:", allTasks);
 
-              // Szűrés a kiválasztott felhasználóra
               this.tasks = allTasks.filter(task => {
                 const isAssigned = task.assignedUsers?.some(user => user.id === this.selectedUserId);
-                console.log(`Task ${task.id} - ${task.title}: Assigned: ${isAssigned}`);
                 return isAssigned;
               });
 
-              console.log(`Filtered tasks for user ${this.selectedUserId}:`, this.tasks);
-
-              // Task events létrehozása
               this.createTaskEvents();
 
-              // Események szűrése és megjelenítése
               this.filterEvents();
             },
             error: (error) => {
@@ -628,15 +601,7 @@ export class CalendarComponent implements OnInit {
   }
 
   onViewChange() {
-    if (this.selectedView === 'activities' && this.authService.isAdmin()) {
-      this.selectedDisplayType = 'all';
-      this.selectedProjectId = null;
-      if (this.selectedUserId) {
-        this.loadActivitiesForUser();
-      } else {
-        this.loadProjects();
-      }
-    } else if (this.selectedView === 'my') {
+    if (this.selectedView === 'my') {
       this.loadProjects();
     } else {
       this.loadProjects();
@@ -644,17 +609,12 @@ export class CalendarComponent implements OnInit {
   }
 
   filterEvents() {
-    console.log(`Filtering events - view: ${this.selectedView}, userId: ${this.selectedUserId}`);
-    console.log(`Available events - projects: ${this.projectEvents.length}, tasks: ${this.taskEvents.length}`);
-
     let filteredEvents: CalendarEvent[] = [];
     const currentUserId = this.authService.getCurrentUserId();
 
-    // Projektek szűrése
     if (this.selectedDisplayType === 'all' || this.selectedDisplayType === 'projects') {
       let projectEventsToShow = [...this.projectEvents];
 
-      // 'my' nézetben csak a saját projektek
       if (this.selectedView === 'my' && currentUserId) {
         const myProjectIds = this.projects
           .filter(p => p.userId === currentUserId ||
@@ -667,8 +627,7 @@ export class CalendarComponent implements OnInit {
         );
       }
 
-      // 'activities' nézetben az adott felhasználó projektjei
-      if (this.selectedView === 'activities' && this.selectedUserId) {
+      if (this.selectedUserId) {
         const userProjectIds = this.projects
           .filter(p => p.userId === this.selectedUserId ||
             p.assignedUsers?.some(u => u.id === this.selectedUserId))
@@ -680,29 +639,24 @@ export class CalendarComponent implements OnInit {
         );
       }
 
-      // Projekt ID szerinti szűrés, ha van kiválasztott projekt
       if (this.selectedProjectId) {
         projectEventsToShow = projectEventsToShow.filter(event =>
           event.extendedProps && event.extendedProps['projectId'] === this.selectedProjectId
         );
       }
 
-      // Törölt elemek szűrése, ha nem kell megjeleníteni
       if (!this.showDeleted) {
         projectEventsToShow = projectEventsToShow.filter(event =>
           !event.extendedProps || !event.extendedProps['isDeleted']
         );
       }
 
-      console.log("Filtered project events:", projectEventsToShow);
       filteredEvents = [...filteredEvents, ...projectEventsToShow];
     }
 
-    // Feladatok szűrése
     if (this.selectedDisplayType === 'all' || this.selectedDisplayType === 'tasks') {
       let taskEventsToShow = [...this.taskEvents];
 
-      // 'my' nézetben csak a saját feladatok
       if (this.selectedView === 'my' && currentUserId) {
         taskEventsToShow = taskEventsToShow.filter(event =>
           event.extendedProps &&
@@ -710,8 +664,7 @@ export class CalendarComponent implements OnInit {
         );
       }
 
-      // 'activities' nézetben az adott felhasználó feladatai
-      if (this.selectedView === 'activities' && this.selectedUserId) {
+      if (this.selectedUserId) {
         taskEventsToShow = taskEventsToShow.filter(event => {
           const isAssignedToUser = this.tasks.some(task =>
             task.id === event.extendedProps?.['taskId'] &&
@@ -721,26 +674,20 @@ export class CalendarComponent implements OnInit {
         });
       }
 
-      // Projekt ID szerinti szűrés, ha van kiválasztott projekt
       if (this.selectedProjectId) {
         taskEventsToShow = taskEventsToShow.filter(event =>
           event.extendedProps && event.extendedProps['projectId'] === this.selectedProjectId
         );
       }
 
-      // Törölt elemek szűrése, ha nem kell megjeleníteni
       if (!this.showDeleted) {
         taskEventsToShow = taskEventsToShow.filter(event =>
           !event.extendedProps || !event.extendedProps['isDeleted']
         );
       }
 
-      console.log("Filtered task events:", taskEventsToShow);
       filteredEvents = [...filteredEvents, ...taskEventsToShow];
     }
-
-    console.log(`Final filtered events count: ${filteredEvents.length}`);
-    console.log("Final filtered events:", filteredEvents);
 
     const calendarApi = this.getCalendarApi();
     if (calendarApi) {
@@ -765,6 +712,13 @@ export class CalendarComponent implements OnInit {
       filteredProjects = filteredProjects.filter(p =>
         p.userId === currentUserId ||
         p.assignedUsers?.some(u => u.id === currentUserId)
+      );
+    }
+
+    if (this.selectedUserId) {
+      filteredProjects = filteredProjects.filter(p =>
+        p.userId === this.selectedUserId ||
+        p.assignedUsers?.some(u => u.id === this.selectedUserId)
       );
     }
 

@@ -15,7 +15,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SzakDolgozat.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ba22faf9b998f6428f780f77af638283299e4790")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+eae0f597165e435eb1ab35924b90f5a43a031504")]
 [assembly: System.Reflection.AssemblyProductAttribute("SzakDolgozat.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SzakDolgozat.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

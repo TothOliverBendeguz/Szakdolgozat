@@ -1,4 +1,3 @@
-// projects/project-relations/project-relation-dialog.component.ts
 import { Component, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';

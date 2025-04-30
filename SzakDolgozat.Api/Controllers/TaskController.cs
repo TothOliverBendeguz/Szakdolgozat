@@ -196,7 +196,6 @@ namespace SzakDolgozat.Api.Controllers
                 _context.ProjectTasks.Add(task);
                 await _context.SaveChangesAsync();
 
-                // Add task assignments
                 if (taskDto.Assignments != null && taskDto.Assignments.Any())
                 {
                     foreach (var assignment in taskDto.Assignments)
@@ -257,7 +256,6 @@ namespace SzakDolgozat.Api.Controllers
                 task.DueDate = taskDto.DueDate;
                 task.CompletedDate = taskDto.CompletedDate;
 
-                // Update task assignments
                 _context.TaskAssignments.RemoveRange(task.TaskAssignments);
                 await _context.SaveChangesAsync();
 

@@ -216,22 +216,7 @@ namespace SzakDolgozat.Api.Controllers
             }
         }
 
-    /*    [HttpPost("generate-test")]
-        public async Task<IActionResult> GenerateTestNotifications()
-        {
-            try
-            {
-                await _notificationService.GenerateDeadlineNotificationsAsync();
-                return Ok(new { message = "Test notifications generated" });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error generating test notifications");
-                return StatusCode(500, new { message = "Internal server error" });
-            }
-        }
 
-        */
 
 
         [HttpGet("generate-test-public")]
@@ -254,7 +239,6 @@ namespace SzakDolgozat.Api.Controllers
 
 
 
-        //email teszt2
         [HttpGet("test-email-public")]
         [AllowAnonymous]
         public async Task<IActionResult> TestEmailPublic()

@@ -19,7 +19,7 @@ namespace SzakDolgozat.Api.Models
 
         [Required]
         [StringLength(50)]
-        public string Role { get; set; } // "Responsible", "Contributor", "Reviewer"
+        public string Role { get; set; } 
 
         [ForeignKey("TaskId")]
         public virtual ProjectTask ProjectTask { get; set; }

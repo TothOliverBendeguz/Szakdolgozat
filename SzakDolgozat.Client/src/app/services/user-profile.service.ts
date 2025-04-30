@@ -27,23 +27,19 @@ export interface UserSettings {
 export class UserProfileService {
   private apiUrl = 'https://localhost:7294/api/UserProfile';
 
-  // Cache for user settings
   private userSettingsCache: UserSettings | null = null;
   private userSettings$ = new BehaviorSubject<UserSettings | null>(null);
 
-  // Observable to get settings
   public settings$ = this.userSettings$.asObservable();
 
   constructor(
     private http: HttpClient,
     private authService: AuthService
   ) {
-    // Initialize settings
     this.loadUserSettings();
   }
 
   getUserProfile(): Observable<UserProfile> {
-    // Ellenőrizzük, hogy be vagyunk-e jelentkezve
     if (!this.authService.isLoggedIn()) {
       return of({
         id: '',
@@ -79,7 +75,6 @@ export class UserProfileService {
   }
 
   getUserSettings(): Observable<UserSettings> {
-    // Ha nincs bejelentkezve, visszaadunk alapértelmezett beállításokat
     if (!this.authService.isLoggedIn()) {
       const defaultSettings: UserSettings = {
         userId: '',
@@ -90,12 +85,10 @@ export class UserProfileService {
       return of(defaultSettings);
     }
 
-    // Ha van cache, azt használjuk
     if (this.userSettingsCache) {
       return of(this.userSettingsCache);
     }
 
-    // Különben lekérjük szerverről
     return this.http.get<UserSettings>(`${this.apiUrl}/settings`).pipe(
       tap(settings => {
         this.userSettingsCache = settings;
@@ -103,7 +96,6 @@ export class UserProfileService {
       }),
       catchError(error => {
         console.error('Error fetching user settings:', error);
-        // Alapértelmezett beállítások visszaadása hiba esetén
         const defaultSettings: UserSettings = {
           userId: this.authService.getCurrentUserId() || '',
           defaultProjectView: 'card',
@@ -117,16 +109,13 @@ export class UserProfileService {
   }
 
   updateUserSettings(settings: UserSettings): Observable<any> {
-    // Helyi tárolás
     this.userSettingsCache = settings;
     this.userSettings$.next(settings);
 
-    // Ha a témát is módosítottuk, azt tároljuk külön
     if (settings.uiTheme) {
       localStorage.setItem('theme', settings.uiTheme);
     }
 
-    // Szerverre mentés
     return this.http.put(`${this.apiUrl}/settings`, settings).pipe(
       tap(() => {
         console.log('Settings saved successfully');
@@ -138,9 +127,7 @@ export class UserProfileService {
     );
   }
 
-  // Beállítások újratöltése szerverről
   loadUserSettings(): void {
-    // Ha nincs bejelentkezve, ne próbáljunk lekérni
     if (!this.authService.isLoggedIn()) {
       const defaultSettings: UserSettings = {
         userId: '',
@@ -161,7 +148,6 @@ export class UserProfileService {
       },
       error: (error) => {
         console.error('Error loading user settings:', error);
-        // Hiba esetén alapértelmezetteket állítunk be
         const defaultSettings: UserSettings = {
           userId: this.authService.getCurrentUserId() || '',
           defaultProjectView: 'card',
@@ -174,7 +160,6 @@ export class UserProfileService {
     });
   }
 
-  // Aktuális beállítások lekérése
   getCurrentSettings(): UserSettings | null {
     return this.userSettingsCache;
   }

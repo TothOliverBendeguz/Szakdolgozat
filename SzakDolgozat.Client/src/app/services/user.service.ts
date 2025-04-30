@@ -62,16 +62,13 @@ export class UserService {
     return this.http.delete<void>(`${this.apiUrl}/${userId}`);
   }
 
-  /**
-   * Lekéri a jelenlegi felhasználó adatait
-   */
+
   getCurrentUser(): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/current`).pipe(
       tap(user => console.log('Fetched current user:', user)),
       catchError(error => {
         console.error('Error fetching current user:', error);
 
-        // Hiba esetén visszaadjuk a bejelentkezett felhasználó adatait
         const currentUserId = this.authService.getCurrentUserId();
         if (currentUserId) {
           const user: User = {

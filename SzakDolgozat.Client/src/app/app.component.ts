@@ -4,6 +4,7 @@ import { NavbarComponent } from './navbar/navbar.component';
 import { CommonModule } from '@angular/common';
 import { ThemeService } from './services/theme.service';
 import { UserProfileService } from './services/user-profile.service';
+import { AuthService } from './auth.service';
 
 @Component({
   selector: 'app-root',
@@ -25,23 +26,36 @@ import { UserProfileService } from './services/user-profile.service';
 export class AppComponent implements OnInit {
   constructor(
     private themeService: ThemeService,
-    private userProfileService: UserProfileService
+    private userProfileService: UserProfileService,
+    private authService: AuthService
   ) { }
 
   ngOnInit() {
-    // Initial load of user theme preferences
     this.loadThemePreference();
+
+    this.authService.authStateChange.subscribe(() => {
+      this.loadThemePreference();
+    });
   }
 
   private loadThemePreference() {
-    this.userProfileService.getUserSettings().subscribe({
-      next: (settings) => {
-        const isDarkMode = settings.uiTheme === 'dark';
-        this.themeService.applyTheme(isDarkMode);
-      },
-      error: (error) => {
-        console.error('Error loading theme setting:', error);
-      }
-    });
+    if (this.authService.isLoggedIn()) {
+      this.userProfileService.getUserSettings().subscribe({
+        next: (settings) => {
+          const isDarkMode = settings.uiTheme === 'dark';
+          this.themeService.applyTheme(isDarkMode);
+        },
+        error: (error) => {
+          console.error('Error loading theme setting:', error);
+          const savedTheme = localStorage.getItem('theme');
+          const isDarkMode = savedTheme === 'dark';
+          this.themeService.applyTheme(isDarkMode);
+        }
+      });
+    } else {
+      const savedTheme = localStorage.getItem('theme');
+      const isDarkMode = savedTheme === 'dark';
+      this.themeService.applyTheme(isDarkMode);
+    }
   }
 }

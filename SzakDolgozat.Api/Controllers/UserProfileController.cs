@@ -147,16 +147,13 @@ namespace SzakDolgozat.Api.Controllers
 
                 _logger.LogInformation("Received settings update: {settings}", JsonSerializer.Serialize(settings));
 
-                // Ellenőrizzük a beérkező adatokat
                 if (settings == null)
                 {
                     return BadRequest("Settings object is null");
                 }
 
-                // Biztosítsuk, hogy a felhasználó ID-je egyezik
                 settings.UserId = userId;
 
-                // Clear User reference to avoid circular reference issues
                 settings.User = null;
 
                 var success = await _userProfileService.UpdateUserSettingsAsync(settings);

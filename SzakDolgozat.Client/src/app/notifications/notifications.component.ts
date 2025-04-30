@@ -297,7 +297,6 @@ export class NotificationsComponent implements OnInit {
   displayedColumns: string[] = ['status', 'type', 'message', 'project', 'date', 'actions'];
   unreadDisplayedColumns: string[] = ['type', 'message', 'project', 'date', 'actions'];
 
-  // Pagináláshoz
   pageSize: number = 10;
   pageIndex: number = 0;
   totalItems: number = 0;
@@ -404,6 +403,5 @@ export class NotificationsComponent implements OnInit {
   onPageChange(event: PageEvent): void {
     this.pageIndex = event.pageIndex;
     this.pageSize = event.pageSize;
-    // Ha szerveroldali paginálás lenne, akkor itt kellene API hívást tenni
   }
 }

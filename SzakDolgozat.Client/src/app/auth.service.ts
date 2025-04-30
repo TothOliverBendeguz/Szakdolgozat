@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap, catchError } from 'rxjs/operators';
-import { Observable, throwError } from 'rxjs';
+import { Observable, throwError, Subject } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 
 export enum UserRole {
@@ -37,12 +37,16 @@ interface DecodedToken {
 export class AuthService {
   private apiUrl = 'https://localhost:7294/api';
   private currentUserRole: UserRole | null = null;
+  private tokenCheckInterval: any = null;
+
+  public authStateChange = new Subject<boolean>();
 
   constructor(
     private http: HttpClient,
     private router: Router
   ) {
     this.loadUserRole();
+    this.setupTokenExpirationCheck();
   }
 
   register(user: { username: string; email: string; password: string }): Observable<RegisterResponse> {
@@ -53,6 +57,9 @@ export class AuthService {
             localStorage.setItem('token', response.token);
             localStorage.setItem('userRole', response.role.toString());
             this.currentUserRole = response.role;
+            this.setupTokenExpirationCheck();
+
+            this.authStateChange.next(true);
           }
         }),
         catchError(this.handleError)
@@ -67,6 +74,9 @@ export class AuthService {
             localStorage.setItem('token', response.token);
             localStorage.setItem('userRole', response.role.toString());
             this.currentUserRole = response.role;
+            this.setupTokenExpirationCheck();
+
+            this.authStateChange.next(true);
           }
         }),
         catchError(this.handleError)
@@ -77,6 +87,11 @@ export class AuthService {
     localStorage.removeItem('token');
     localStorage.removeItem('userRole');
     this.currentUserRole = null;
+    this.clearTokenExpirationCheck();
+
+    
+    this.authStateChange.next(false);
+
     this.router.navigate(['/login']);
   }
 
@@ -87,10 +102,23 @@ export class AuthService {
     try {
       const decodedToken = jwtDecode<DecodedToken>(token);
       const currentTime = Date.now() / 1000;
-      return decodedToken.exp > currentTime;
-    } catch {
+
+      if (decodedToken.exp <= currentTime) {
+        console.log('Token expired, logging out');
+        this.logout();
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error validating token:', error);
+      this.logout();
       return false;
     }
+  }
+
+  isTokenValid(): boolean {
+    return this.isLoggedIn();
   }
 
   getCurrentUserRole(): UserRole {
@@ -101,7 +129,6 @@ export class AuthService {
           const decodedToken = jwtDecode<DecodedToken>(token);
           const role = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
           this.currentUserRole = Number(role) as UserRole;
-          console.log('Role from token:', role);
         } catch (error) {
           console.error('Error decoding role from token:', error);
           this.currentUserRole = UserRole.Reader;
@@ -114,22 +141,20 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    const currentRole = this.getCurrentUserRole();
-    // console.log('Current role in isAdmin:', currentRole); 
-    return currentRole === UserRole.Admin;
+    return this.isLoggedIn() && this.getCurrentUserRole() === UserRole.Admin;
   }
 
   isDeveloper(): boolean {
-    const role = this.getCurrentUserRole();
-    return role === UserRole.Developer;
+    return this.isLoggedIn() && this.getCurrentUserRole() === UserRole.Developer;
   }
 
   isReader(): boolean {
-    const role = this.getCurrentUserRole();
-    return role === UserRole.Reader;
+    return this.isLoggedIn() && this.getCurrentUserRole() === UserRole.Reader;
   }
 
   getCurrentUserId(): string | null {
+    if (!this.isLoggedIn()) return null;
+
     const token = localStorage.getItem('token');
     if (!token) return null;
 
@@ -143,6 +168,8 @@ export class AuthService {
   }
 
   getCurrentUserEmail(): string | null {
+    if (!this.isLoggedIn()) return null;
+
     const token = localStorage.getItem('token');
     if (!token) return null;
 
@@ -156,16 +183,38 @@ export class AuthService {
   }
 
   private loadUserRole() {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const decodedToken = jwtDecode<DecodedToken>(token);
-        const roleStr = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
-        this.currentUserRole = Number(roleStr) as UserRole;
-      } catch (error) {
-        console.error('Error loading user role:', error);
-        this.currentUserRole = UserRole.Reader;
+    if (this.isLoggedIn()) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const decodedToken = jwtDecode<DecodedToken>(token);
+          const roleStr = decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+          this.currentUserRole = Number(roleStr) as UserRole;
+        } catch (error) {
+          console.error('Error loading user role:', error);
+          this.currentUserRole = UserRole.Reader;
+        }
       }
+    } else {
+      this.currentUserRole = null;
+    }
+  }
+
+  private setupTokenExpirationCheck() {
+    this.clearTokenExpirationCheck();
+
+    this.tokenCheckInterval = setInterval(() => {
+      if (!this.isLoggedIn()) {
+        this.logout();
+        this.clearTokenExpirationCheck();
+      }
+    }, 60 * 60 * 1000); 
+  }
+
+  private clearTokenExpirationCheck() {
+    if (this.tokenCheckInterval) {
+      clearInterval(this.tokenCheckInterval);
+      this.tokenCheckInterval = null;
     }
   }
 

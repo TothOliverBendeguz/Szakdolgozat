@@ -320,7 +320,6 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
       this.network = null;
     }
 
-    // Save current view type to settings
     this.saveGraphViewPreference();
   }
 
@@ -329,9 +328,7 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (settings) => {
         this.userSettings = settings;
 
-        // Apply default graph view from settings
         if (settings.defaultGraphView) {
-          // Only apply if it's a valid view type and the user has permissions for it
           if ((settings.defaultGraphView !== 'all' || this.authService.isAdmin()) &&
             ['all', 'projects', 'project-tasks', 'user'].includes(settings.defaultGraphView)) {
             this.viewType = settings.defaultGraphView as 'all' | 'projects' | 'project-tasks' | 'user';
@@ -339,12 +336,10 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         }
 
-        // If the viewType is 'all' but the user is not admin, change to 'projects'
         if (this.viewType === 'all' && !this.authService.isAdmin()) {
           this.viewType = 'projects';
         }
 
-        // If the viewType is 'user', set the user ID if not already set
         if (this.viewType === 'user' && !this.selectedUserId) {
           this.selectedUserId = this.authService.getCurrentUserId();
         }
@@ -370,6 +365,7 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+
   private initNetwork(): void {
     if (!this.containerElement) {
       console.error('Network container is not available');
@@ -380,70 +376,66 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
       this.nodes = new DataSet([]);
       this.edges = new DataSet([]);
 
-      const networkOptions = {
+      const networkOptions: any = {
         nodes: {
           font: {
-            size: 14,
-            color: '#333333'
+            size: 16,
+            color: '#333333',
+            face: 'arial',
+            background: 'rgba(255, 255, 255, 0.8)'
           },
-          borderWidth: 1,
-          borderWidthSelected: 2,
-          chosen: true
+          borderWidth: 2,
+          borderWidthSelected: 3,
+          margin: 15,  
+          chosen: true,
+          shape: 'box',
+          scaling: {
+            label: {
+              enabled: true
+            }
+          }
         },
         edges: {
           font: {
-            size: 12,
-            color: '#666666'
+            size: 14,
+            color: '#555555',
+            face: 'arial',
+            strokeWidth: 0,
+            background: 'rgba(255, 255, 255, 0.9)',
+            multi: true,
+            alignment: 'middle'
           },
           color: {
-            color: '#999999',
+            color: '#555555',
             highlight: '#000000'
           },
-          width: 1,
-          selectionWidth: 2,
-          smooth: {
-            enabled: true,
-            type: 'continuous',
-            roundness: 0.5
-          }
+          width: 2,
+          selectionWidth: 3,
+          smooth: false,  
+          length: 250  
         },
         physics: {
-          enabled: true,
-          solver: 'forceAtlas2Based',
-          forceAtlas2Based: {
-            gravitationalConstant: -50,
-            centralGravity: 0.01,
-            springLength: 200,
-            springConstant: 0.08,
-            damping: 0.4,
-            avoidOverlap: 0.8
-          },
+          enabled: false,  
           stabilization: {
             enabled: true,
-            iterations: 2000,
+            iterations: 200,  
             updateInterval: 25,
             fit: true
-          },
-          timestep: 0.5,
-          adaptiveTimestep: true,
-          maxVelocity: 50,
-          minVelocity: 0.1
+          }
         },
         interaction: {
           hover: true,
           tooltipDelay: 200,
           navigationButtons: true,
           keyboard: true,
-          zoomView: true
+          zoomView: true,
+          dragView: true,
+          dragNodes: true,
+          multiselect: true
         },
         layout: {
-          hierarchical: {
-            enabled: false,
-            direction: 'UD',
-            sortMethod: 'directed',
-            nodeSpacing: 150,
-            treeSpacing: 200
-          }
+          improvedLayout: true,
+          randomSeed: 42  
         },
         groups: {
           'project': {
@@ -462,14 +454,8 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
               size: 16,
               color: '#FFFFFF',
               face: 'Roboto',
-              bold: true
-            },
-            shadow: {
-              enabled: true,
-              color: 'rgba(0,0,0,0.2)',
-              size: 5,
-              x: 2,
-              y: 2
+              bold: true,
+              background: '#4CAF50'
             }
           },
           'task': {
@@ -487,14 +473,8 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
             font: {
               size: 14,
               color: '#FFFFFF',
-              face: 'Roboto'
-            },
-            shadow: {
-              enabled: true,
-              color: 'rgba(0,0,0,0.2)',
-              size: 5,
-              x: 2,
-              y: 2
+              face: 'Roboto',
+              background: '#2196F3'
             }
           },
           'user': {
@@ -512,25 +492,30 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
             font: {
               size: 14,
               color: '#FFFFFF',
-              face: 'Roboto'
-            },
-            shadow: {
-              enabled: true,
-              color: 'rgba(0,0,0,0.2)',
-              size: 5,
-              x: 2,
-              y: 2
+              face: 'Roboto',
+              background: '#9C27B0'
             }
           }
         }
       };
 
-      this.network = new vis.Network(this.containerElement, { nodes: this.nodes, edges: this.edges }, networkOptions);
+      this.network = new vis.Network(
+        this.containerElement,
+        { nodes: this.nodes, edges: this.edges },
+        networkOptions
+      );
 
       this.network.on('click', (params: any) => {
         if (params.nodes && params.nodes.length > 0) {
           const nodeId = params.nodes[0];
           this.handleNodeClick(nodeId);
+        }
+      });
+
+      this.network.once('stabilizationIterationsDone', () => {
+        if (this.network) {
+          this.network.setOptions({ physics: { enabled: false } });
+          console.log('Physics disabled after stabilization');
         }
       });
 
@@ -540,12 +525,190 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private updateNetworkData(data: GraphData): void {
+    if (!this.network) return;
+
+    const translatedEdges = data.edges.map((edge: GraphEdge) => {
+      const translations: { [key: string]: string } = {
+        'belongs to': 'hozzátartozik',
+        'assigned to': 'hozzárendelve',
+        'owns': 'tulajdonosa',
+        'owned by': 'tulajdonosa',
+        'depends on': 'függ tőle',
+        'is depended on by': 'függ rá',
+        'parent of': 'szülője',
+        'child of': 'gyereke',
+        'related to': 'kapcsolódik'
+      };
+
+      const translatedLabel = edge.label && translations[edge.label.toLowerCase()]
+        ? translations[edge.label.toLowerCase()]
+        : edge.label;
+
+      return {
+        ...edge,
+        label: translatedLabel
+      };
+    });
+
+    const visNodes = data.nodes.map((node: GraphNode) => ({
+      id: node.id,
+      label: node.label,
+      group: node.group,
+      shape: node.shape || (node.group === 'project' ? 'box' : (node.group === 'task' ? 'ellipse' : 'diamond')),
+      borderWidth: node.borderWidth || 2,
+      color: node.color || {
+        background: '#ccc',
+        border: '#333333'
+      },
+      data: node.data,
+      margin: 15,  
+      font: {
+        size: node.group === 'project' ? 16 : 14,
+        color: '#FFFFFF',
+        face: 'arial',
+        bold: node.group === 'project',
+        background: node.group === 'project' ? 'rgba(76, 175, 80, 0.7)' :
+          (node.group === 'task' ? 'rgba(33, 150, 243, 0.7)' : 'rgba(156, 39, 176, 0.7)')
+      },
+      fixed: false  
+    }));
+
+    const visEdges = translatedEdges.map((edge: GraphEdge) => ({
+      id: edge.id,
+      from: edge.from,
+      to: edge.to,
+      label: edge.label || '',
+      arrows: edge.arrows || 'to',
+      color: edge.color || {
+        color: '#555555',
+        highlight: '#000000'
+      },
+      width: edge.width || 2,
+      dashes: edge.dashes,
+      smooth: false,  
+      length: 250,
+      font: {
+        background: 'rgba(255, 255, 255, 0.9)'
+      }
+    }));
+
+    this.nodes.clear();
+    this.edges.clear();
+
+    this.nodes.add(visNodes);
+    this.edges.add(visEdges);
+
+    if (this.viewType === 'project-tasks') {
+      this.network.setOptions({
+        layout: {
+          hierarchical: {
+            enabled: true,
+            direction: 'UD',
+            sortMethod: 'directed',
+            nodeSpacing: 200,  
+            levelSeparation: 250,  
+            treeSpacing: 250,
+            blockShifting: true,
+            edgeMinimization: true,
+            parentCentralization: true
+          }
+        },
+        physics: {
+          enabled: true,  
+          hierarchicalRepulsion: {
+            nodeDistance: 200,  
+            avoidOverlap: 1  
+          },
+          stabilization: {
+            enabled: true,
+            iterations: 100,
+            updateInterval: 25
+          }
+        },
+        interaction: {
+          dragNodes: true,  
+          multiselect: true
+        }
+      });
+    } else if (this.viewType === 'user') {
+      this.network.setOptions({
+        layout: {
+          hierarchical: {
+            enabled: false
+          }
+        },
+        physics: {
+          enabled: true,  
+          solver: 'repulsion',  
+          repulsion: {
+            nodeDistance: 200,  
+            centralGravity: 0.1,
+            springLength: 200,
+            springConstant: 0.05,
+            damping: 0.09
+          },
+          stabilization: {
+            enabled: true,
+            iterations: 100,
+            updateInterval: 25
+          }
+        },
+        interaction: {
+          dragNodes: true,
+          multiselect: true
+        }
+      });
+    } else {
+      this.network.setOptions({
+        layout: {
+          hierarchical: {
+            enabled: false
+          },
+          randomSeed: 42  
+        },
+        physics: {
+          enabled: true,  
+          solver: 'repulsion',
+          repulsion: {
+            nodeDistance: 200,
+            centralGravity: 0.1,
+            springLength: 200,
+            springConstant: 0.05,
+            damping: 0.09
+          },
+          stabilization: {
+            enabled: true,
+            iterations: 100,
+            updateInterval: 25
+          }
+        }
+      });
+    }
+
+    this.network.stabilize(50);
+
+    setTimeout(() => {
+      this.network.fit({
+        animation: {
+          duration: 500,
+          easingFunction: 'easeInOutQuad'
+        }
+      });
+
+      setTimeout(() => {
+        if (this.network) {
+          this.network.setOptions({ physics: { enabled: false } });
+        }
+      }, 1000);
+    }, 200);
+  }
+
   loadProjects(): void {
     this.projectService.getProjects().subscribe({
       next: (projects) => {
         this.projects = projects;
 
-        // A felhasználó projektjeinek szűrése
         const currentUserId = this.authService.getCurrentUserId();
         this.userProjects = projects.filter(project =>
           project.userId === currentUserId ||
@@ -553,7 +716,6 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
           this.authService.isAdmin()
         );
 
-        // Ha a viewType 'project-tasks' és nincs kiválasztott projekt, de van elérhető projekt
         if (this.viewType === 'project-tasks' && !this.selectedProjectId && this.userProjects.length > 0) {
           this.selectedProjectId = this.userProjects[0].id || null;
         }
@@ -570,9 +732,7 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
       next: (users) => {
         this.users = users;
 
-        // Ha a viewType 'user' és nincs kiválasztott felhasználó
         if (this.viewType === 'user' && !this.selectedUserId) {
-          // Ha admin, akkor az első felhasználót választjuk, egyébként a saját ID-t
           this.selectedUserId = this.authService.isAdmin() ?
             (users.length > 0 ? users[0].id : null) :
             this.authService.getCurrentUserId();
@@ -591,7 +751,6 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
     let dataObservable;
 
     if (this.viewType === 'all') {
-      // Csak adminok láthatják az összes kapcsolatot
       if (!this.authService.isAdmin()) {
         this.viewType = 'projects';
         dataObservable = this.graphService.getProjectsGraph();
@@ -612,13 +771,16 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
         return;
       }
     } else {
-      // Alapértelmezett eset
       dataObservable = this.graphService.getProjectsGraph();
     }
 
     dataObservable.subscribe({
       next: (data) => {
         console.log("Loaded graph data:", data);
+
+        const filteredEdges = this.removeDuplicateEdges(data.edges);
+        data.edges = filteredEdges;
+
         this.updateNetworkData(data);
         this.loading = false;
       },
@@ -630,43 +792,50 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  private updateNetworkData(data: GraphData): void {
-    if (!this.network) return;
+  private removeDuplicateEdges(edges: GraphEdge[]): GraphEdge[] {
+    const edgeMap = new Map<string, GraphEdge[]>();
 
-    const visNodes = data.nodes.map((node: GraphNode) => ({
-      id: node.id,
-      label: node.label,
-      group: node.group,
-      shape: node.shape,
-      borderWidth: node.borderWidth || 1,
-      color: node.color || {
-        background: '#ccc',
-        border: '#333333'
-      },
-      data: node.data
-    }));
+    edges.forEach(edge => {
+      const key = `${edge.from}-${edge.to}`;
+      const reverseKey = `${edge.to}-${edge.from}`;
 
-    const visEdges = data.edges.map((edge: GraphEdge) => ({
-      id: edge.id,
-      from: edge.from,
-      to: edge.to,
-      label: edge.label || '',
-      arrows: edge.arrows || 'to'
-    }));
+      if (edgeMap.has(key)) {
+        edgeMap.get(key)!.push(edge);
+      } else if (edgeMap.has(reverseKey)) {
+        const reverseEdges = edgeMap.get(reverseKey)!;
 
-    this.nodes.clear();
-    this.edges.clear();
+        const hasReverseRelation = reverseEdges.some(re =>
+          this.isReverseRelation(re.label, edge.label));
 
-    this.nodes.add(visNodes);
-    this.edges.add(visEdges);
-
-    this.network.fit({
-      animation: {
-        duration: 1000,
-        easingFunction: 'easeOutQuint'
+        if (!hasReverseRelation) {
+          if (!edgeMap.has(key)) {
+            edgeMap.set(key, []);
+          }
+          edgeMap.get(key)!.push(edge);
+        }
+      } else {
+        edgeMap.set(key, [edge]);
       }
     });
+
+    return Array.from(edgeMap.values()).flat();
   }
+
+  private isReverseRelation(label1?: string, label2?: string): boolean {
+    if (!label1 || !label2) return false;
+
+    const reversePairs = [
+      ['Depends on', 'Is depended on by'],
+      ['Parent of', 'Child of'],
+      ['Related to', 'Related to'] 
+    ];
+
+    return reversePairs.some(pair =>
+      (pair[0] === label1 && pair[1] === label2) ||
+      (pair[0] === label2 && pair[1] === label1));
+  }
+
+ 
 
   handleNodeClick(nodeId: string): void {
     const idParts = nodeId.split('-');
@@ -715,7 +884,6 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
         this.loadGraphData();
         this.saveGraphViewPreference();
       } else {
-        // Nem admin felhasználók csak a saját adataikat nézhetik
         if (entityId === this.authService.getCurrentUserId()) {
           this.viewType = 'user';
           this.selectedUserId = entityId;
@@ -727,7 +895,6 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onViewTypeChange(): void {
-    // Ha 'all' és nem admin, változtassuk 'projects'-re
     if (this.viewType === 'all' && !this.authService.isAdmin()) {
       this.viewType = 'projects';
     }
@@ -739,7 +906,6 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.viewType !== 'user') {
       this.selectedUserId = null;
     } else if (!this.authService.isAdmin()) {
-      // Nem admin felhasználók csak a saját adataikat nézhetik
       this.selectedUserId = this.authService.getCurrentUserId();
     }
 
@@ -794,7 +960,6 @@ export class GraphViewComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   resetGraph(): void {
-    // Alapértelmezett nézet a felhasználónak megfelelően
     this.viewType = this.authService.isAdmin() ? 'all' : 'projects';
     this.selectedProjectId = null;
     this.selectedUserId = this.authService.isAdmin() ? null : this.authService.getCurrentUserId();

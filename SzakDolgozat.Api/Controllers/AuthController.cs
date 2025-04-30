@@ -39,7 +39,7 @@ namespace SzakDolgozat.Api.Controllers
             {
                 UserName = model.Username,
                 Email = model.Email,
-                Role = (int)UserRole.Reader  // Alapértelmezetten Reader szerepkör
+                Role = (int)UserRole.Reader 
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);

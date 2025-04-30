@@ -350,19 +350,16 @@ export class ProfileSettingsComponent implements OnInit {
   setTheme(theme: 'light' | 'dark'): void {
     this.userSettings.uiTheme = theme;
 
-    // Apply theme immediately
     if (theme === 'dark') {
       this.themeService.applyTheme(true);
     } else {
       this.themeService.applyTheme(false);
     }
 
-    // Save settings
     this.saveSettings();
   }
 
   saveSettings(): void {
-    // Létrehozunk egy tiszta objektumot, ami csak a szükséges adatokat tartalmazza
     const settingsToSave = {
       id: this.userSettings.id,
       userId: this.userSettings.userId,

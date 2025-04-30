@@ -34,50 +34,50 @@ import { UserService, User } from '../../services/user.service';
     MatSelectModule
   ],
   template: `
-    <h2 mat-dialog-title>Add New Project</h2>
+    <h2 mat-dialog-title>Új projekt létrehozása</h2>
     <mat-dialog-content>
       <form #projectForm="ngForm">
         <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Project Name</mat-label>
+          <mat-label>Projekt Neve</mat-label>
           <input matInput [(ngModel)]="project.name" name="name" required>
         </mat-form-field>
 
         <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Project Manager</mat-label>
+          <mat-label>Projekt vezető</mat-label>
           <input matInput [(ngModel)]="project.projectManager" name="projectManager" required>
         </mat-form-field>
 
         <!-- Dátum és idő mezők -->
         <div class="date-time-section">
           <mat-form-field appearance="fill" class="date-field">
-            <mat-label>Start Date</mat-label>
+            <mat-label>Kezdési dátum</mat-label>
             <input matInput [matDatepicker]="startPicker" [(ngModel)]="startDate" name="startDate" required>
             <mat-datepicker-toggle matIconSuffix [for]="startPicker"></mat-datepicker-toggle>
             <mat-datepicker #startPicker></mat-datepicker>
           </mat-form-field>
 
           <mat-form-field appearance="fill" class="time-field">
-            <mat-label>Start Time</mat-label>
+            <mat-label>Kezdési idő</mat-label>
             <input matInput type="time" [(ngModel)]="startTime" name="startTime" required>
           </mat-form-field>
         </div>
 
         <div class="date-time-section">
           <mat-form-field appearance="fill" class="date-field">
-            <mat-label>Planned End Date</mat-label>
+            <mat-label>Tervezett befejezési dátum</mat-label>
             <input matInput [matDatepicker]="endPicker" [(ngModel)]="endDate" name="endDate" required>
             <mat-datepicker-toggle matIconSuffix [for]="endPicker"></mat-datepicker-toggle>
             <mat-datepicker #endPicker></mat-datepicker>
           </mat-form-field>
 
           <mat-form-field appearance="fill" class="time-field">
-            <mat-label>End Time</mat-label>
+            <mat-label>Befejezési idő</mat-label>
             <input matInput type="time" [(ngModel)]="endTime" name="endTime" required>
           </mat-form-field>
         </div>
 
         <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Description</mat-label>
+          <mat-label>Leírás</mat-label>
           <textarea matInput [(ngModel)]="project.description" name="description" rows="4"></textarea>
         </mat-form-field>
 
@@ -88,7 +88,7 @@ import { UserService, User } from '../../services/user.service';
         </mat-form-field>
 
         <mat-form-field appearance="fill" class="full-width">
-          <mat-label>Assign Users</mat-label>
+          <mat-label> Résztevevő felhasználók</mat-label>
           <mat-select [(ngModel)]="additionalUsers" name="additionalUsers" multiple>
             <mat-option *ngFor="let user of filteredAvailableUsers" [value]="user">
               {{user.email}} ({{user.userName}})
@@ -97,7 +97,7 @@ import { UserService, User } from '../../services/user.service';
         </mat-form-field>
 
         <div class="selected-users" *ngIf="hasAssignedUsers()">
-          <h4>Selected Users:</h4>
+          <h4>Résztevevő felhasználók:</h4>
           <mat-chip-listbox>
             <!-- Aktuális felhasználó nem eltávolítható -->
             <mat-chip [removable]="false" *ngIf="currentUser">

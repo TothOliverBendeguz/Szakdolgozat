@@ -44,7 +44,6 @@ export class ThemeToggleComponent implements OnInit {
   toggleTheme(): void {
     this.themeService.toggleDarkMode();
 
-    // Ha be van jelentkezve, frissítsük a felhasználói beállításokat is
     if (this.authService.isLoggedIn()) {
       this.userProfileService.getUserSettings().subscribe({
         next: (settings) => {

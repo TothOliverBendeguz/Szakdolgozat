@@ -89,10 +89,8 @@ namespace SzakDolgozat.Api.Controllers
         {
             try
             {
-                // Naplózzuk a beérkező adatokat
                 _logger.LogInformation($"Creating relation: {System.Text.Json.JsonSerializer.Serialize(relationDto)}");
 
-                // Validáljuk a beérkező adatokat
                 if (relationDto == null)
                 {
                     return BadRequest("Relation data is null");
@@ -114,7 +112,6 @@ namespace SzakDolgozat.Api.Controllers
                 }
                 var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-                // Ellenőrizzük a projektek létezését
                 var sourceProject = await _context.Projects.FindAsync(relationDto.SourceProjectId);
                 var targetProject = await _context.Projects.FindAsync(relationDto.TargetProjectId);
 
@@ -123,7 +120,6 @@ namespace SzakDolgozat.Api.Controllers
                     return NotFound("One or both projects not found");
                 }
 
-                // Ellenőrizzük, hogy a felhasználó jogosult-e a kapcsolat létrehozására
                 var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
                 var isAdmin = userRole == "1";
                 var isSourceProjectOwner = sourceProject.UserId == userId || sourceProject.CreatedById == userId;
@@ -133,13 +129,11 @@ namespace SzakDolgozat.Api.Controllers
                     return Forbid();
                 }
 
-                // Ellenőrizzük, hogy ne legyen önkapcsolat
                 if (relationDto.SourceProjectId == relationDto.TargetProjectId)
                 {
                     return BadRequest("Cannot create a relation between a project and itself");
                 }
 
-                // Ellenőrizzük, hogy ne létezzen már ilyen kapcsolat
                 var existingRelation = await _context.ProjectRelations
                     .AnyAsync(pr =>
                         pr.SourceProjectId == relationDto.SourceProjectId &&
@@ -150,7 +144,6 @@ namespace SzakDolgozat.Api.Controllers
                     return BadRequest("A relation already exists between these projects");
                 }
 
-                // Létrehozzuk a kapcsolatot
                 var relation = new ProjectRelation
                 {
                     SourceProjectId = relationDto.SourceProjectId,
@@ -162,7 +155,6 @@ namespace SzakDolgozat.Api.Controllers
                 _context.ProjectRelations.Add(relation);
                 await _context.SaveChangesAsync();
 
-                // A kapcsolat fordított irányú létrehozása
                 string inverseRelationType = GetInverseRelationType(relationDto.RelationType);
 
                 if (!string.IsNullOrEmpty(inverseRelationType))
@@ -192,7 +184,6 @@ namespace SzakDolgozat.Api.Controllers
             }
         }
 
-        // Segédmetódus a fordított kapcsolattípus meghatározásához
         private string GetInverseRelationType(string relationType)
         {
             switch (relationType)
@@ -264,7 +255,6 @@ namespace SzakDolgozat.Api.Controllers
 
                 if (!isAdmin)
                 {
-                    // Ellenőrizzük, hogy a felhasználó rendelkezik-e megfelelő jogosultsággal
                     var sourceProject = await _context.Projects.FindAsync(relation.SourceProjectId);
                     var targetProject = await _context.Projects.FindAsync(relation.TargetProjectId);
 
@@ -319,7 +309,6 @@ namespace SzakDolgozat.Api.Controllers
 
                 if (!isAdmin)
                 {
-                    // Ellenőrizzük, hogy a felhasználó rendelkezik-e megfelelő jogosultsággal
                     var isSourceProjectOwner = relation.SourceProject?.UserId == userId;
                     var isTargetProjectOwner = relation.TargetProject?.UserId == userId;
 

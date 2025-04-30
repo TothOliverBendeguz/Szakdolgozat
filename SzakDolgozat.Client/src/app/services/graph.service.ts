@@ -325,7 +325,6 @@ export class GraphService {
               tasks.forEach(task => {
                 graphData.nodes.push(this.createTaskNode(task));
 
-                // Feladat -> projekt kapcsolat
                 graphData.edges.push({
                   id: `edge-task-${task.id}-project-${projectId}`,
                   from: `task-${task.id}`,
@@ -334,7 +333,6 @@ export class GraphService {
                   arrows: 'to'
                 });
 
-                // Felhasználó -> feladat kapcsolat
                 graphData.edges.push({
                   id: `edge-user-${user.id}-task-${task.id}`,
                   from: `user-${user.id}`,
@@ -382,7 +380,7 @@ export class GraphService {
     const isNearDeadline = dueDate > now &&
       (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24) <= 7;
 
-    let backgroundColor = '#9E9E9E'; // Default
+    let backgroundColor = '#9E9E9E'; 
     if (task.status === 'New') backgroundColor = '#2196F3';
     else if (task.status === 'InProgress') backgroundColor = '#FFC107';
     else if (task.status === 'Completed') backgroundColor = '#4CAF50';

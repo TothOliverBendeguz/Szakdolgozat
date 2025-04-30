@@ -17,10 +17,10 @@ import { MatStepperModule } from '@angular/material/stepper';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatDividerModule } from '@angular/material/divider';
-import { MatCardModule } from '@angular/material/card'; // Hiányzó import
+import { MatCardModule } from '@angular/material/card';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService, User } from '../../services/user.service';
 import { Project, ProjectUser } from '../../services/project.service';
-import { ProjectReport, ProjectReportService } from '../../services/project-report.service';
 import { ProjectDocument, ProjectDocumentService } from '../../services/project-document.service';
 import { AuthService } from '../../auth.service';
 import { TaskListComponent } from '../../tasks/task-list.component';
@@ -48,7 +48,8 @@ import { ProjectRelationsComponent } from '../project-relations/project-relation
     MatTabsModule,
     MatBadgeModule,
     MatDividerModule,
-    MatCardModule, // Hiányzó import a komponens imports listájában
+    MatCardModule,
+    MatSnackBarModule,
     TaskListComponent,
     ProjectRelationsComponent
   ],
@@ -59,15 +60,12 @@ import { ProjectRelationsComponent } from '../project-relations/project-relation
           {{ data.isActive ? 'check_circle' : 'cancel' }}
         </mat-icon>
         {{ data.name }}
-        <div class="title-badge" *ngIf="documents.length > 0 || reports.length > 0">
+            <div class="title-badge" *ngIf="documents.length > 0">
           <span class="badge-item" *ngIf="documents.length > 0" matTooltip="{{ documents.length }} csatolt dokumentum">
             <mat-icon>attach_file</mat-icon>
             {{ documents.length }}
           </span>
-          <span class="badge-item" *ngIf="reports.length > 0" matTooltip="{{ reports.length }} jelentés">
-            <mat-icon>description</mat-icon>
-            {{ reports.length }}
-          </span>
+
         </div>
       </h2>
       
@@ -210,6 +208,57 @@ import { ProjectRelationsComponent } from '../project-relations/project-relation
                       <mat-icon matSuffix>link</mat-icon>
                     </mat-form-field>
                   </div>
+
+                  <!-- Új felhasználó hozzáadási szekció -->
+                  <div class="form-row">
+                    <h4 class="subsection-title">Felhasználók kezelése</h4>
+                    
+                    <mat-form-field appearance="outline" class="full-width">
+                      <mat-label>Felhasználó hozzáadása</mat-label>
+                      <mat-select [(ngModel)]="selectedUserId" name="selectedUser">
+                        <mat-option *ngFor="let user of availableUsers" [value]="user.id">
+                          {{user.userName}} ({{user.email}})
+                        </mat-option>
+                      </mat-select>
+                    </mat-form-field>
+                    
+                    <button mat-raised-button color="primary" (click)="addUserToProject()" 
+                            [disabled]="!selectedUserId" class="add-user-btn">
+                      <mat-icon>person_add</mat-icon>
+                      Felhasználó hozzáadása
+                    </button>
+                    
+                    <div class="current-users" *ngIf="data.assignedUsers && data.assignedUsers.length > 0">
+                      <h5>Jelenlegi felhasználók:</h5>
+                      <div class="user-list">
+                        <div *ngFor="let user of data.assignedUsers" class="user-item">
+                          <div class="user-info">
+                            <mat-icon *ngIf="isOwner(user)" class="owner-icon-sm">star</mat-icon>
+                            <span class="user-name">{{user.userName}}</span>
+                            <span class="user-email">({{user.email}})</span>
+                          </div>
+                          <button mat-icon-button color="warn" (click)="removeUserFromProject(user)" 
+                                  [disabled]="isOwner(user)" matTooltip="Felhasználó eltávolítása">
+                            <mat-icon>remove_circle</mat-icon>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Admin funkciók szekció -->
+              <div *ngIf="authService.isAdmin() && data.id" class="admin-section">
+                <mat-divider class="section-divider"></mat-divider>
+                <h3 class="section-title">Adminisztrátori funkciók</h3>
+                
+                <div class="admin-actions">
+                  <button mat-raised-button color="warn" (click)="purgeProject()">
+                    <mat-icon>delete_forever</mat-icon>
+                    Projekt végleges törlése
+                  </button>
+                  <p class="warning-text">Figyelem: Ez a művelet nem vonható vissza, a projekt minden adata véglegesen törlődik!</p>
                 </div>
               </div>
             </div>
@@ -278,94 +327,7 @@ import { ProjectRelationsComponent } from '../project-relations/project-relation
               </mat-list>
             </div>
           </mat-tab>
-          
-          <!-- Jelentések fül -->
-          <mat-tab label="Jelentések" [disabled]="!data.id">
-            <div class="tab-content">
-              <div class="section-header">
-                <h3 class="section-title">Projekt jelentések</h3>
-                <div *ngIf="canEdit" class="section-actions">
-                  <button mat-raised-button color="primary" (click)="openAddReportForm()">
-                    <mat-icon>post_add</mat-icon>
-                    Új jelentés
-                  </button>
-                </div>
-              </div>
-              
-              <div *ngIf="showAddReportForm && canEdit" class="report-form">
-                <mat-card>
-                  <mat-card-header>
-                    <mat-card-title>Új jelentés létrehozása</mat-card-title>
-                  </mat-card-header>
-                  <mat-card-content>
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Jelentés címe</mat-label>
-                      <input matInput [(ngModel)]="newReport.title" required>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Jelentés típusa</mat-label>
-                      <mat-select [(ngModel)]="newReport.reportType" required>
-                        <mat-option value="Progress">Haladási jelentés</mat-option>
-                        <mat-option value="Issue">Probléma jelentés</mat-option>
-                        <mat-option value="Milestone">Mérföldkő jelentés</mat-option>
-                      </mat-select>
-                    </mat-form-field>
-
-                    <mat-form-field appearance="outline" class="full-width">
-                      <mat-label>Tartalom</mat-label>
-                      <textarea matInput [(ngModel)]="newReport.content" rows="6" required></textarea>
-                    </mat-form-field>
-                  </mat-card-content>
-                  <mat-card-actions align="end">
-                    <button mat-button (click)="cancelReport()">Mégsem</button>
-                    <button mat-raised-button color="primary" (click)="submitReport()"
-                            [disabled]="!newReport.title || !newReport.content || !newReport.reportType">
-                      Jelentés mentése
-                    </button>
-                  </mat-card-actions>
-                </mat-card>
-              </div>
-              
-              <div *ngIf="reports.length === 0 && !showAddReportForm" class="no-items">
-                <mat-icon>description</mat-icon>
-                <p>Nincsenek jelentések ehhez a projekthez</p>
-              </div>
-              
-              <div *ngIf="reports.length > 0" class="reports-container">
-                <mat-accordion>
-                  <mat-expansion-panel *ngFor="let report of reports" class="report-panel">
-                    <mat-expansion-panel-header>
-                      <mat-panel-title class="report-title">
-                        <span class="report-type-badge" 
-                              [ngClass]="{
-                                'progress-badge': report.reportType === 'Progress',
-                                'issue-badge': report.reportType === 'Issue',
-                                'milestone-badge': report.reportType === 'Milestone'
-                              }">
-                          {{ getReportTypeText(report.reportType) }}
-                        </span>
-                        {{ report.title }}
-                      </mat-panel-title>
-                      <mat-panel-description class="report-date">
-                        {{ report.createdAt | date:'yyyy.MM.dd. HH:mm' }}
-                      </mat-panel-description>
-                    </mat-expansion-panel-header>
-                    
-                    <div class="report-content">
-                      <p>{{ report.content }}</p>
-                      <div class="report-footer">
-                        <span class="report-author" *ngIf="report.createdBy">
-                          Készítette: {{ report.createdBy.userName }}
-                        </span>
-                      </div>
-                    </div>
-                  </mat-expansion-panel>
-                </mat-accordion>
-              </div>
-            </div>
-          </mat-tab>
-          
+  
           <!-- Kapcsolatok fül -->
           <mat-tab label="Kapcsolatok" [disabled]="!data.id">
             <div class="tab-content">
@@ -452,6 +414,13 @@ import { ProjectRelationsComponent } from '../project-relations/project-relation
       font-size: 18px;
       font-weight: 500;
       margin-bottom: 16px;
+      color: rgba(0, 0, 0, 0.8);
+    }
+
+    .subsection-title {
+      font-size: 16px;
+      font-weight: 500;
+      margin: 16px 0;
       color: rgba(0, 0, 0, 0.8);
     }
     
@@ -708,10 +677,83 @@ import { ProjectRelationsComponent } from '../project-relations/project-relation
     
     .report-footer {
       display: flex;
-      justify-content: flex-end;
+justify-content: flex-end;
       font-size: 14px;
       color: rgba(0, 0, 0, 0.6);
       margin-top: 16px;
+    }
+    
+    /* Felhasználók kezelésére vonatkozó stílusok */
+    .add-user-btn {
+      margin-bottom: 16px;
+    }
+    
+    .current-users {
+      background-color: #f5f5f5;
+      border-radius: 4px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+    
+    .current-users h5 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+    
+    .user-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .user-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background-color: white;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .owner-icon-sm {
+      color: #FFD700;
+      font-size: 16px;
+      height: 16px;
+      width: 16px;
+    }
+    
+    .user-name {
+      font-weight: 500;
+    }
+    
+    /* Admin funkciók stílusai */
+    .admin-section {
+      margin-top: 24px;
+      padding: 16px;
+      background-color: #fff4f4;
+      border-radius: 4px;
+      border-left: 4px solid #F44336;
+    }
+    
+    .admin-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    
+    .warning-text {
+      color: #D32F2F;
+      font-style: italic;
+      margin: 0;
     }
     
     @media (max-width: 768px) {
@@ -729,36 +771,30 @@ import { ProjectRelationsComponent } from '../project-relations/project-relation
 export class ProjectDetailsDialogComponent implements OnInit {
   canEdit: boolean = false;
   currentUserId: string | null = null;
-  reports: ProjectReport[] = [];
   documents: ProjectDocument[] = [];
-  newReport: Partial<ProjectReport> = {
-    title: '',
-    content: '',
-    reportType: 'Progress'
-  };
-  showAddReportForm: boolean = false;
 
   startDate: Date = new Date();
   startTime: string = '';
   endDate: Date = new Date();
   endTime: string = '';
 
+  availableUsers: User[] = [];
+  selectedUserId: string | null = null;
+
   constructor(
     public dialogRef: MatDialogRef<ProjectDetailsDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: Project,
-    private reportService: ProjectReportService,
     private userService: UserService,
     public authService: AuthService,
-    private documentService: ProjectDocumentService
+    private documentService: ProjectDocumentService,
+    private snackBar: MatSnackBar
   ) {
     this.currentUserId = this.authService.getCurrentUserId();
 
-    // Inicializáljuk az assignedUsers tömböt, ha még undefined
     if (!this.data.assignedUsers) {
       this.data.assignedUsers = [];
     }
 
-    // A developer felhasználó szerkesztheti a saját projektjét (tulajdonos vagy létrehozó)
     this.canEdit = this.authService.isAdmin() ||
       (this.authService.isDeveloper() &&
         (this.data.userId === this.currentUserId ||
@@ -767,11 +803,28 @@ export class ProjectDetailsDialogComponent implements OnInit {
 
   ngOnInit() {
     this.initializeDateTimeFields();
-    this.loadReports();
+    this.loadAvailableUsers();
 
     if (this.data.id) {
       this.loadDocuments();
     }
+  }
+
+  loadAvailableUsers() {
+    this.userService.getUsers().subscribe({
+      next: (users) => {
+        this.availableUsers = users.filter(user =>
+          !this.data.assignedUsers?.some(assignedUser => assignedUser.id === user.id));
+
+        console.log('Available users loaded:', this.availableUsers.length);
+      },
+      error: (error) => {
+        console.error('Error loading users:', error);
+        this.snackBar.open('Hiba történt a felhasználók betöltése közben', 'OK', {
+          duration: 3000
+        });
+      }
+    });
   }
 
   canToggleStatus(): boolean {
@@ -821,14 +874,6 @@ export class ProjectDetailsDialogComponent implements OnInit {
     return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
   }
 
-  loadReports() {
-    if (!this.data.id) return;
-
-    this.reportService.getProjectReports(this.data.id).subscribe({
-      next: (reports) => this.reports = reports,
-      error: (error) => console.error('Error loading reports:', error)
-    });
-  }
 
   loadDocuments() {
     if (!this.data.id) return;
@@ -880,53 +925,51 @@ export class ProjectDetailsDialogComponent implements OnInit {
     }
   }
 
-  openAddReportForm() {
-    this.showAddReportForm = true;
-    this.newReport = {
-      title: '',
-      content: '',
-      reportType: 'Progress'
-    };
-  }
 
-  cancelReport() {
-    this.showAddReportForm = false;
-  }
-
-  submitReport() {
-    if (!this.newReport.title || !this.newReport.content || !this.data.id || !this.newReport.reportType) {
-      return;
-    }
-
-    const report: ProjectReport = {
-      projectId: this.data.id,
-      title: this.newReport.title,
-      content: this.newReport.content,
-      reportType: this.newReport.reportType
-    };
-
-    this.reportService.createReport(report).subscribe({
-      next: () => {
-        this.loadReports();
-        this.showAddReportForm = false;
-      },
-      error: (error) => {
-        console.error('Error creating report:', error);
-      }
-    });
-  }
-
-  getReportTypeText(type: string): string {
-    switch (type) {
-      case 'Progress': return 'Haladási';
-      case 'Issue': return 'Probléma';
-      case 'Milestone': return 'Mérföldkő';
-      default: return type;
-    }
-  }
 
   isOwner(user: User | ProjectUser): boolean {
     return user.id === this.data.userId || user.id === this.data.createdById;
+  }
+
+  addUserToProject(): void {
+    if (!this.selectedUserId) return;
+
+    const userToAdd = this.availableUsers.find(user => user.id === this.selectedUserId);
+
+    if (userToAdd) {
+      if (!this.data.assignedUsers) {
+        this.data.assignedUsers = [];
+      }
+
+      this.data.assignedUsers.push(userToAdd);
+
+      this.availableUsers = this.availableUsers.filter(user => user.id !== this.selectedUserId);
+
+      this.selectedUserId = null;
+
+      this.snackBar.open(`${userToAdd.userName} hozzáadva a projekthez`, 'OK', {
+        duration: 3000
+      });
+    }
+  }
+
+  removeUserFromProject(user: User): void {
+    if (this.isOwner(user)) {
+      this.snackBar.open('A projekt tulajdonosa nem távolítható el', 'OK', {
+        duration: 3000
+      });
+      return;
+    }
+
+    if (this.data.assignedUsers) {
+      this.data.assignedUsers = this.data.assignedUsers.filter(u => u.id !== user.id);
+
+      this.availableUsers.push(user);
+
+      this.snackBar.open(`${user.userName} eltávolítva a projektből`, 'OK', {
+        duration: 3000
+      });
+    }
   }
 
   getDocumentIcon(fileName: string): string {
@@ -972,10 +1015,8 @@ export class ProjectDetailsDialogComponent implements OnInit {
       return;
     }
 
-    // Állítsuk be a projekt új állapotát
     this.data.isActive = !this.data.isActive;
 
-    // Zárjuk be a dialógust a frissített projekttel
     this.dialogRef.close({
       action: 'toggle',
       project: this.data
@@ -994,12 +1035,10 @@ export class ProjectDetailsDialogComponent implements OnInit {
       this.data.startDate = combinedStartDateTime;
       this.data.plannedEndDate = combinedEndDateTime;
 
-      // Biztosítjuk, hogy a hozzárendelt felhasználók tömb létezik
       if (!this.data.assignedUsers) {
         this.data.assignedUsers = [];
       }
 
-      // Biztosítjuk, hogy a létrehozó benne van a hozzárendelt felhasználók között
       if (this.currentUserId && !this.data.assignedUsers.some(u => u.id === this.currentUserId)) {
         const currentUser = this.data.assignedUsers.find(u => u.id === this.currentUserId);
         if (currentUser) {
@@ -1023,6 +1062,42 @@ export class ProjectDetailsDialogComponent implements OnInit {
 
     const result = new Date(year, month, day, hours, minutes, 0, 0);
     return result;
+  }
+
+  purgeProject(): void {
+    if (!this.authService.isAdmin() || !this.data.id) {
+      return;
+    }
+
+    const confirmResult = confirm(
+      'FIGYELEM: Arra készül, hogy VÉGLEGESEN törölje ezt a projektet és minden hozzá kapcsolódó adatot! ' +
+      'Ez a művelet nem vonható vissza. Biztosan folytatja?'
+    );
+
+    if (confirmResult) {
+      fetch(`https://localhost:7294/api/project/purge/${this.data.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      })
+        .then(response => {
+          if (response.ok) {
+            this.snackBar.open('A projekt véglegesen törölve lett', 'OK', {
+              duration: 3000
+            });
+            this.dialogRef.close({ action: 'deleted' });
+          } else {
+            throw new Error('Hiba történt a projekt törlése közben');
+          }
+        })
+        .catch(error => {
+          console.error('Error purging project:', error);
+          this.snackBar.open('Hiba történt a projekt végleges törlése közben', 'OK', {
+            duration: 3000
+          });
+        });
+    }
   }
 
   close(): void {

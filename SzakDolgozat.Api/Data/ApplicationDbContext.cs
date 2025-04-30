@@ -67,7 +67,6 @@ namespace SzakDolgozat.Api.Data
                 .HasForeignKey(np => np.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // ProjectTask-TaskAssignment kapcsolat
             modelBuilder.Entity<TaskAssignment>()
                 .HasKey(ta => new { ta.TaskId, ta.UserId });
 
@@ -75,13 +74,13 @@ namespace SzakDolgozat.Api.Data
                 .HasOne(ta => ta.ProjectTask)
                 .WithMany(t => t.TaskAssignments)
                 .HasForeignKey(ta => ta.TaskId)
-                .OnDelete(DeleteBehavior.NoAction); // Megváltoztatjuk CASCADE helyett NoAction-re
+                .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<TaskAssignment>()
                 .HasOne(ta => ta.User)
                 .WithMany()
                 .HasForeignKey(ta => ta.UserId)
-                .OnDelete(DeleteBehavior.NoAction); // Megváltoztatjuk CASCADE helyett NoAction-r
+                .OnDelete(DeleteBehavior.NoAction); 
 
             modelBuilder.Entity<Project>(entity =>
             {
@@ -156,7 +155,7 @@ namespace SzakDolgozat.Api.Data
             modelBuilder.Entity<IdentityUserRole<string>>().HasData(
                 new IdentityUserRole<string>
                 {
-                    RoleId = "8450e6c0-e5a6-41b2-8957-978998ebdaeb", // Admin role ID
+                    RoleId = "8450e6c0-e5a6-41b2-8957-978998ebdaeb", 
                     UserId = adminId
                 }
             );

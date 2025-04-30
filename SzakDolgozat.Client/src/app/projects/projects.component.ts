@@ -362,7 +362,6 @@ export class ProjectsComponent implements OnInit {
         (this.authService.isAdmin() || this.canModifyProject(project))) {
         console.log('Toggling project status to:', result.project.isActive);
 
-        // Frissítsük a projektet a státusz változtatással
         this.projectService.updateProject(result.project).subscribe({
           next: () => {
             this.loadProjects();
@@ -384,6 +383,8 @@ export class ProjectsComponent implements OnInit {
             this.snackBar.open('Error updating project', 'Close', { duration: 3000 });
           }
         });
+      } else if (result.action === 'deleted') {
+        this.loadProjects();
       }
     });
   }
