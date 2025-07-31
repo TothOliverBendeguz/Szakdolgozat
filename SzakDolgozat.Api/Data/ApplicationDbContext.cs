@@ -27,7 +27,6 @@ namespace SzakDolgozat.Api.Data
 
         public DbSet<ProjectRelation> ProjectRelations { get; set; }
 
-        public DbSet<UserActivityLog> UserActivityLogs { get; set; }
 
         public DbSet<UserSettings> UserSettings { get; set; }
 
@@ -137,8 +136,8 @@ namespace SzakDolgozat.Api.Data
             var adminUser = new User
             {
                 Id = adminId,
-                UserName = "admin@admin.com",
-                NormalizedUserName = "ADMIN@ADMIN.COM",
+                UserName = "admin",
+                NormalizedUserName = "ADMIN",
                 Email = "admin@admin.com",
                 NormalizedEmail = "ADMIN@ADMIN.COM",
                 EmailConfirmed = true,
